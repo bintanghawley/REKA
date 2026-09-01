@@ -1,0 +1,140 @@
+// =============================================================================
+// PRISMA SCHEMA — REKA UMKM Daily Transaction Logging
+// ItechnoCup 2026 (SDG 8)
+// Infrastruktur: Self-hosted PostgreSQL di VPS
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// MODEL: User
+// Menyimpan kredensial autentikasi (email + hashed password).
+// Menggantikan peran auth.users dari Supabase.
+// -----------------------------------------------------------------------------
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique
+  password_hash String
+
+  created_at DateTime @default(now()) @db.Timestamptz()
+
+  // Relasi ke semua tabel yang menggunakan user_id
+  profile     Profile?
+  produk      Produk[]
+  transaksi   Transaksi[]
+  pengeluaran PengeluaranDadakan[]
+
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// MODEL: Profile
+// Data profil usaha UMKM — 1-to-1 dengan User.
+// id = FK ke users.id (bukan auto-generated).
+// -----------------------------------------------------------------------------
+model Profile {
+  id         String @id @db.Uuid
+
+  nama_usaha String @default("") @db.Text
+  jenis_usaha String @default("") @db.Text
+
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @updatedAt @db.Timestamptz()
+
+  user User @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// -----------------------------------------------------------------------------
+// MODEL: Produk
+// Master data produk UMKM.
+// -----------------------------------------------------------------------------
+model Produk {
+  id      String @id @default(uuid()) @db.Uuid
+  user_id String @db.Uuid
+
+  nama       String  @db.Text
+  harga_jual Decimal @db.Decimal(15, 2)
+  hpp        Decimal @db.Decimal(15, 2)
+
+  created_at DateTime @default(now()) @db.Timestamptz()
+  updated_at DateTime @updatedAt @db.Timestamptz()
+
+  user      User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  transaksi Transaksi[]
+
+  @@index([user_id])
+  @@map("produk")
+}
+
+// -----------------------------------------------------------------------------
+// MODEL: Transaksi
+// Catatan transaksi harian.
+//
+// KEPUTUSAN ARSITEKTUR KRUSIAL:
+// Kolom harga_jual_saat_transaksi & hpp_saat_transaksi menyimpan SNAPSHOT HARGA
+// pada saat transaksi terjadi. Ini menjamin integritas data historis untuk
+// perhitungan Omzet, Laba Kotor, dan Laba Bersih meskipun harga produk
+// diubah di kemudian hari. JANGAN ubah ini menjadi pure FK lookup ke produk.
+// -----------------------------------------------------------------------------
+model Transaksi {
+  id        String @id @default(uuid()) @db.Uuid
+  user_id   String @db.Uuid
+  produk_id String @db.Uuid
+
+  qty                       Int     @db.Integer
+  harga_jual_saat_transaksi Decimal @db.Decimal(15, 2)
+  hpp_saat_transaksi        Decimal @db.Decimal(15, 2)
+
+  // KEPUTUSAN ARSITEKTUR: Satu kolom TIMESTAMPTZ menggabungkan tanggal + jam.
+  // Alasan:
+  //   - Query "omzet per jam": EXTRACT(HOUR FROM waktu) → 1 kolom, 1 expression
+  //   - Query "7 hari terakhir": WHERE waktu >= NOW() - INTERVAL '7 days' → efisien
+  //   - Prisma filter: gte/lte langsung pada DateTime — tanpa CONCAT string
+  //   - Konversi dari TEXT: TO_TIMESTAMP(tanggal || ' ' || jam, 'YYYY-MM-DD HH24:MI:SS')
+  waktu DateTime @db.Timestamptz()
+
+  created_at DateTime @default(now()) @db.Timestamptz()
+
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  produk Produk @relation(fields: [produk_id], references: [id], onDelete: Restrict)
+
+  @@index([user_id])
+  @@index([produk_id])
+  @@index([waktu])
+  @@index([user_id, waktu])
+  @@map("transaksi")
+}
+
+// -----------------------------------------------------------------------------
+// MODEL: PengeluaranDadakan
+// Catatan pengeluaran tak terduga / operasional UMKM.
+// -----------------------------------------------------------------------------
+model PengeluaranDadakan {
+  id      String @id @default(uuid()) @db.Uuid
+  user_id String @db.Uuid
+
+  kategori String  @db.Text
+  nominal  Decimal @db.Decimal(15, 2)
+
+  // @db.Date: Prisma v5 mendukung DateTime @db.Date → PostgreSQL DATE native.
+  // Untuk pengeluaran, presisi "hari" sudah cukup (tidak perlu jam).
+  tanggal DateTime @db.Date
+
+  created_at DateTime @default(now()) @db.Timestamptz()
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([tanggal])
+  @@index([user_id, tanggal])
+  @@map("pengeluaran_dadakan")
+}

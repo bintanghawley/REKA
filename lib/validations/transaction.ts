@@ -8,13 +8,11 @@ export const createTransactionSchema = z.object({
     .number({ required_error: "Jumlah (qty) wajib diisi", invalid_type_error: "Qty harus berupa angka" })
     .int("Qty harus berupa bilangan bulat")
     .min(1, "Qty minimal 1"),
-  tanggal: z
+  // waktu opsional — jika tidak dikirim, server gunakan new Date()
+  // Berguna untuk backdate transaksi (format ISO 8601)
+  waktu: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")
-    .optional(),
-  jam: z
-    .string()
-    .regex(/^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/, "Format jam harus HH:MM atau HH:MM:SS")
+    .datetime({ message: "Format waktu tidak valid (harus ISO 8601)" })
     .optional(),
 });
 

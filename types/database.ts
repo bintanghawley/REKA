@@ -1,201 +1,115 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[];
+// =============================================================================
+// Database Types — REKA UMKM
+// ItechnoCup 2026 (SDG 8)
+// =============================================================================
 
-export type GenericRelationship = {
-  foreignKeyName: string;
-  columns: string[];
-  isOneToOne?: boolean;
-  referencedRelation: string;
-  referencedColumns: string[];
+// Session user dari Auth.js
+export type SessionUser = {
+  id: string;
+  email: string | null | undefined;
 };
 
-export type GenericView = {
-  Row: Record<string, unknown>;
-  Insert?: Record<string, unknown>;
-  Update?: Record<string, unknown>;
-  Relationships: GenericRelationship[];
+// Model: profiles
+export type Profile = {
+  id: string;
+  nama_usaha: string;
+  jenis_usaha: string;
+  created_at: string;
+  updated_at: string;
 };
+export type ProfileInsert = Omit<Profile, "created_at" | "updated_at">;
+export type ProfileUpdate = Partial<Pick<Profile, "nama_usaha" | "jenis_usaha">>;
 
-export type GenericFunction = {
-  Args: Record<string, unknown> | never;
-  Returns: unknown;
-  SetofOptions?: {
-    isSetofReturn?: boolean;
-    isOneToOne?: boolean;
-    isNotNullable?: boolean;
-    to: string;
-    from: string;
-  };
+// Model: produk
+export type Produk = {
+  id: string;
+  user_id: string;
+  nama: string;
+  harga_jual: number;
+  hpp: number;
+  created_at: string;
+  updated_at: string;
 };
+export type ProdukInsert = Omit<Produk, "id" | "created_at" | "updated_at">;
+export type ProdukUpdate = Partial<Pick<Produk, "nama" | "harga_jual" | "hpp">>;
 
-export type Database = {
-  public: {
-    Tables: {
-      profiles: {
-        Row: {
-          id: string;
-          nama_usaha: string;
-          jenis_usaha: string;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id: string;
-          nama_usaha?: string;
-          jenis_usaha?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          nama_usaha?: string;
-          jenis_usaha?: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-      produk: {
-        Row: {
-          id: string;
-          user_id: string;
-          nama: string;
-          harga_jual: number;
-          hpp: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          nama: string;
-          harga_jual: number;
-          hpp: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          nama?: string;
-          harga_jual?: number;
-          hpp?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-      transaksi: {
-        Row: {
-          id: string;
-          user_id: string;
-          produk_id: string;
-          qty: number;
-          harga_jual_saat_transaksi: number;
-          hpp_saat_transaksi: number;
-          tanggal: string;
-          jam: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          produk_id: string;
-          qty: number;
-          harga_jual_saat_transaksi: number;
-          hpp_saat_transaksi: number;
-          tanggal?: string;
-          jam?: string;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          produk_id?: string;
-          qty?: number;
-          harga_jual_saat_transaksi?: number;
-          hpp_saat_transaksi?: number;
-          tanggal?: string;
-          jam?: string;
-          created_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "transaksi_produk_id_fkey";
-            columns: ["produk_id"];
-            isOneToOne: false;
-            referencedRelation: "produk";
-            referencedColumns: ["id"];
-          }
-        ];
-      };
-      pengeluaran_dadakan: {
-        Row: {
-          id: string;
-          user_id: string;
-          kategori: string;
-          nominal: number;
-          tanggal: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          kategori: string;
-          nominal: number;
-          tanggal?: string;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          kategori?: string;
-          nominal?: number;
-          tanggal?: string;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
-    };
-    Views: Record<string, GenericView>;
-    Functions: Record<string, GenericFunction>;
-  };
+// Model: transaksi
+// PENTING: harga_jual_saat_transaksi & hpp_saat_transaksi adalah snapshot
+// harga pada saat transaksi, bukan FK lookup ke produk.
+//
+// waktu: ISO 8601 string (dari DateTime Prisma → .toISOString())
+// Menggabungkan tanggal + jam dalam satu kolom TIMESTAMPTZ untuk
+// kemudahan query "omzet per jam" dan "7 hari terakhir".
+export type Transaksi = {
+  id: string;
+  user_id: string;
+  produk_id: string;
+  qty: number;
+  harga_jual_saat_transaksi: number;
+  hpp_saat_transaksi: number;
+  waktu: string; // ISO 8601: "2026-09-01T14:30:00.000Z"
+  created_at: string;
 };
+export type TransaksiInsert = Omit<Transaksi, "id" | "created_at">;
+export type TransaksiUpdate = Partial<Pick<Transaksi, "qty" | "waktu">>;
 
-// Model Alias Helpers
-export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-export type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
-export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
+// Model: pengeluaran_dadakan
+// tanggal: ISO date string (YYYY-MM-DD dari Date Prisma → .toISOString().split('T')[0])
+export type PengeluaranDadakan = {
+  id: string;
+  user_id: string;
+  kategori: string;
+  nominal: number;
+  tanggal: string; // YYYY-MM-DD
+  created_at: string;
+};
+export type PengeluaranDadakanInsert = Omit<PengeluaranDadakan, "id" | "created_at">;
+export type PengeluaranDadakanUpdate = Partial<Pick<PengeluaranDadakan, "kategori" | "nominal" | "tanggal">>;
 
-export type Produk = Database["public"]["Tables"]["produk"]["Row"];
-export type ProdukInsert = Database["public"]["Tables"]["produk"]["Insert"];
-export type ProdukUpdate = Database["public"]["Tables"]["produk"]["Update"];
-
-export type Transaksi = Database["public"]["Tables"]["transaksi"]["Row"];
-export type TransaksiInsert = Database["public"]["Tables"]["transaksi"]["Insert"];
-export type TransaksiUpdate = Database["public"]["Tables"]["transaksi"]["Update"];
-
-export type PengeluaranDadakan = Database["public"]["Tables"]["pengeluaran_dadakan"]["Row"];
-export type PengeluaranDadakanInsert = Database["public"]["Tables"]["pengeluaran_dadakan"]["Insert"];
-export type PengeluaranDadakanUpdate = Database["public"]["Tables"]["pengeluaran_dadakan"]["Update"];
-
-// Transaksi dengan join produk info
+// Transaksi dengan join produk info (untuk tampilan riwayat)
 export interface TransaksiWithProduk extends Transaksi {
   produk?: Pick<Produk, "nama" | "harga_jual" | "hpp"> | null;
 }
 
 // Financial calculation summary interface
+// Formula (tidak berubah):
+//   Omzet              = SUM(harga_jual_saat_transaksi * qty)
+//   Total HPP          = SUM(hpp_saat_transaksi * qty)
+//   Laba Kotor         = Omzet - Total HPP
+//   Total Pengeluaran  = SUM(nominal pengeluaran_dadakan)
+//   Laba Bersih        = Laba Kotor - Total Pengeluaran
 export interface DailyFinancialSummary {
-  tanggal: string;
+  tanggal: string; // YYYY-MM-DD
   total_transaksi_count: number;
-  omzet: number;          // SUM(harga_jual_saat_transaksi * qty)
-  total_hpp: number;      // SUM(hpp_saat_transaksi * qty)
-  laba_kotor: number;     // omzet - total_hpp
-  total_pengeluaran: number; // SUM(nominal)
-  laba_bersih: number;    // laba_kotor - total_pengeluaran
+  omzet: number;
+  total_hpp: number;
+  laba_kotor: number;
+  total_pengeluaran: number;
+  laba_bersih: number;
+}
+
+// Hourly sales data point untuk grafik
+export interface HourlySalesPoint {
+  jam: number;      // 0-23
+  omzet: number;    // total omzet pada jam tersebut
+  count: number;    // jumlah transaksi
+}
+
+// Top product entry untuk ranking
+export interface TopProductEntry {
+  produk_id: string;
+  nama: string;
+  total_qty: number;
+  total_omzet: number;
+  rank: number;
+}
+
+// History summary per periode
+export interface PeriodeSummary {
+  omzet: number;
+  laba_kotor: number;
+  total_pengeluaran: number;
+  laba_bersih: number;
+  total_transaksi: number;
+  total_pengeluaran_count: number;
 }

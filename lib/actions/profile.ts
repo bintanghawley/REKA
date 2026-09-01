@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/session";
 import { updateProfileSchema, type UpdateProfileInput } from "@/lib/validations/profile";
 import type { Profile } from "@/types/database";
@@ -15,21 +15,30 @@ export type ActionResult<T = unknown> = {
 
 /**
  * Mengambil profil usaha milik user yang sedang terautentikasi.
+ *
+ * PENEGAKAN OWNERSHIP (pengganti RLS):
+ * profiles.id === users.id (relasi 1-to-1). Query dengan where: { id: user.id }
+ * secara inheren hanya bisa mengembalikan profil milik user aktif.
  */
 export async function getProfileAction(): Promise<ActionResult<Profile>> {
   try {
     const user = await requireAuth();
-    const supabase = createClient();
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
+    const profile = await db.profile.findUnique({
+      where: { id: user.id }, // PENEGAKAN OWNERSHIP: profiles.id = users.id
+    });
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (!profile) {
+      return { success: false, error: "Profil tidak ditemukan." };
     }
+
+    const data: Profile = {
+      id: profile.id,
+      nama_usaha: profile.nama_usaha,
+      jenis_usaha: profile.jenis_usaha,
+      created_at: profile.created_at.toISOString(),
+      updated_at: profile.updated_at.toISOString(),
+    };
 
     return { success: true, data };
   } catch (err: unknown) {
@@ -40,6 +49,10 @@ export async function getProfileAction(): Promise<ActionResult<Profile>> {
 
 /**
  * Memperbarui data profil usaha UMKM.
+ *
+ * PENEGAKAN OWNERSHIP (pengganti RLS):
+ * update dengan where: { id: user.id } — hanya bisa update profil diri sendiri.
+ * Prisma akan throw jika record tidak ditemukan (P2025).
  */
 export async function updateProfileAction(
   input: UpdateProfileInput
@@ -57,21 +70,19 @@ export async function updateProfileAction(
 
   try {
     const user = await requireAuth();
-    const supabase = createClient();
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .update({
-        nama_usaha,
-        jenis_usaha,
-      })
-      .eq("id", user.id)
-      .select()
-      .single();
+    const profile = await db.profile.update({
+      where: { id: user.id }, // PENEGAKAN OWNERSHIP
+      data: { nama_usaha, jenis_usaha },
+    });
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
+    const data: Profile = {
+      id: profile.id,
+      nama_usaha: profile.nama_usaha,
+      jenis_usaha: profile.jenis_usaha,
+      created_at: profile.created_at.toISOString(),
+      updated_at: profile.updated_at.toISOString(),
+    };
 
     revalidatePath("/dashboard");
     revalidatePath("/onboarding");

@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/session";
 import {
   createProductSchema,
@@ -20,31 +20,43 @@ export type ActionResult<T = unknown> = {
 
 /**
  * Mengambil seluruh daftar produk milik user yang sedang terautentikasi.
+ *
+ * PENEGAKAN OWNERSHIP (pengganti RLS):
+ * Klausa where: { user_id: user.id } memastikan hanya produk milik
+ * user yang sedang login yang dikembalikan.
  */
 export async function getProductsAction(): Promise<ActionResult<Produk[]>> {
   try {
     const user = await requireAuth();
-    const supabase = createClient();
 
-    const { data, error } = await supabase
-      .from("produk")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("nama", { ascending: true });
+    const products = await db.produk.findMany({
+      where: { user_id: user.id },
+      orderBy: { nama: "asc" },
+    });
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
+    const data: Produk[] = products.map((p) => ({
+      id: p.id,
+      user_id: p.user_id,
+      nama: p.nama,
+      harga_jual: Number(p.harga_jual),
+      hpp: Number(p.hpp),
+      created_at: p.created_at.toISOString(),
+      updated_at: p.updated_at.toISOString(),
+    }));
 
-    return { success: true, data: data || [] };
+    return { success: true, data };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Gagal mengambil daftar produk.";
+    const message =
+      err instanceof Error ? err.message : "Gagal mengambil daftar produk.";
     return { success: false, error: message };
   }
 }
 
 /**
  * Menambahkan produk baru. `user_id` diisi secara otomatis dari authenticated session.
+ *
+ * PENEGAKAN OWNERSHIP (pengganti RLS):
+ * user_id di-set dari session.user.id — tidak bisa dimanipulasi dari client.
  */
 export async function createProductAction(
   input: CreateProductInput
@@ -60,34 +72,42 @@ export async function createProductAction(
 
   try {
     const user = await requireAuth();
-    const supabase = createClient();
 
-    const { data, error } = await supabase
-      .from("produk")
-      .insert({
+    const product = await db.produk.create({
+      data: {
         user_id: user.id,
         nama: parseResult.data.nama,
         harga_jual: parseResult.data.harga_jual,
         hpp: parseResult.data.hpp,
-      })
-      .select()
-      .single();
+      },
+    });
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
+    const data: Produk = {
+      id: product.id,
+      user_id: product.user_id,
+      nama: product.nama,
+      harga_jual: Number(product.harga_jual),
+      hpp: Number(product.hpp),
+      created_at: product.created_at.toISOString(),
+      updated_at: product.updated_at.toISOString(),
+    };
 
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
     return { success: true, data };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Gagal membuat produk.";
+    const message =
+      err instanceof Error ? err.message : "Gagal membuat produk.";
     return { success: false, error: message };
   }
 }
 
 /**
  * Memperbarui data produk. Hanya dapat mengubah produk milik user yang sedang login.
+ *
+ * PENEGAKAN OWNERSHIP (pengganti RLS):
+ * updateMany dengan where: { id, user_id: user.id } — jika count === 0,
+ * berarti record tidak ada atau bukan milik user ini → return FORBIDDEN.
  */
 export async function updateProductAction(
   input: UpdateProductInput
@@ -105,52 +125,75 @@ export async function updateProductAction(
 
   try {
     const user = await requireAuth();
-    const supabase = createClient();
 
-    const { data, error } = await supabase
-      .from("produk")
-      .update(updateFields)
-      .eq("id", id)
-      .eq("user_id", user.id) // Penegakan ownership di data layer selain RLS
-      .select()
-      .single();
+    // Cek ownership dulu sebelum update
+    const existing = await db.produk.findFirst({
+      where: { id, user_id: user.id },
+      select: { id: true },
+    });
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (!existing) {
+      return {
+        success: false,
+        error: "Produk tidak ditemukan atau Anda tidak memiliki akses.",
+      };
     }
+
+    const product = await db.produk.update({
+      where: { id },
+      data: updateFields,
+    });
+
+    const data: Produk = {
+      id: product.id,
+      user_id: product.user_id,
+      nama: product.nama,
+      harga_jual: Number(product.harga_jual),
+      hpp: Number(product.hpp),
+      created_at: product.created_at.toISOString(),
+      updated_at: product.updated_at.toISOString(),
+    };
 
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
     return { success: true, data };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Gagal memperbarui produk.";
+    const message =
+      err instanceof Error ? err.message : "Gagal memperbarui produk.";
     return { success: false, error: message };
   }
 }
 
 /**
  * Menghapus produk milik user.
+ *
+ * PENEGAKAN OWNERSHIP (pengganti RLS):
+ * deleteMany dengan where: { id, user_id: user.id } — jika count === 0,
+ * reject dengan pesan FORBIDDEN.
  */
-export async function deleteProductAction(id: string): Promise<ActionResult<void>> {
+export async function deleteProductAction(
+  id: string
+): Promise<ActionResult<void>> {
   try {
     const user = await requireAuth();
-    const supabase = createClient();
 
-    const { error } = await supabase
-      .from("produk")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", user.id);
+    const result = await db.produk.deleteMany({
+      where: { id, user_id: user.id },
+    });
 
-    if (error) {
-      return { success: false, error: error.message };
+    if (result.count === 0) {
+      return {
+        success: false,
+        error: "Produk tidak ditemukan atau Anda tidak memiliki akses.",
+      };
     }
 
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
     return { success: true };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Gagal menghapus produk.";
+    const message =
+      err instanceof Error ? err.message : "Gagal menghapus produk.";
     return { success: false, error: message };
   }
 }

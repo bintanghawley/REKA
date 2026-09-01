@@ -1,8 +1,15 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { loginSchema, registerSchema, type LoginInput, type RegisterInput } from "@/lib/validations/auth";
-import { revalidatePath } from "next/cache";
+import { signIn, signOut } from "@/auth";
+import { db } from "@/lib/prisma";
+import {
+  loginSchema,
+  registerSchema,
+  type LoginInput,
+  type RegisterInput,
+} from "@/lib/validations/auth";
+import bcrypt from "bcryptjs";
+import { AuthError } from "next-auth";
 
 export type AuthActionResult = {
   success: boolean;
@@ -12,10 +19,17 @@ export type AuthActionResult = {
 
 /**
  * Server action untuk registrasi akun baru UMKM.
- * Data nama_usaha & jenis_usaha dikirim di options.data agar trigger handle_new_user()
- * otomatis membuat record di public.profiles secara aman.
+ *
+ * Menggantikan supabase.auth.signUp() + trigger handle_new_user().
+ * Proses dilakukan dalam satu transaksi Prisma agar atomic:
+ *   1. Hash password dengan bcrypt
+ *   2. Buat user baru di tabel `users`
+ *   3. Buat profil default di tabel `profiles` (1-to-1 dengan user)
+ *   4. Login otomatis dengan signIn() dari Auth.js
  */
-export async function registerAction(input: RegisterInput): Promise<AuthActionResult> {
+export async function registerAction(
+  input: RegisterInput
+): Promise<AuthActionResult> {
   const parseResult = registerSchema.safeParse(input);
   if (!parseResult.success) {
     return {
@@ -28,38 +42,67 @@ export async function registerAction(input: RegisterInput): Promise<AuthActionRe
   const { email, password, nama_usaha, jenis_usaha } = parseResult.data;
 
   try {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          nama_usaha: nama_usaha || "Usaha Saya",
-          jenis_usaha: jenis_usaha || "Lainnya",
-        },
-      },
+    // Cek apakah email sudah terdaftar
+    const existingUser = await db.user.findUnique({
+      where: { email },
+      select: { id: true },
     });
 
-    if (error) {
+    if (existingUser) {
       return {
         success: false,
-        error: error.message,
+        error: "Email ini sudah terdaftar. Silakan gunakan email lain atau masuk.",
       };
     }
 
-    revalidatePath("/", "layout");
+    // Hash password sebelum disimpan
+    const password_hash = await bcrypt.hash(password, 12);
+
+    // Buat user + profil dalam satu transaksi Prisma (atomic)
+    // Menggantikan trigger handle_new_user() dari Supabase
+    await db.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          password_hash,
+        },
+      });
+
+      await tx.profile.create({
+        data: {
+          id: newUser.id, // profiles.id = users.id (1-to-1)
+          nama_usaha: nama_usaha || "Usaha Saya",
+          jenis_usaha: jenis_usaha || "Lainnya",
+        },
+      });
+    });
+
+    // Login otomatis setelah registrasi berhasil
+    await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
     return { success: true };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Terjadi kesalahan pada server saat registrasi.";
-    return {
-      success: false,
-      error: message,
-    };
+    if (err instanceof AuthError) {
+      return {
+        success: false,
+        error: "Registrasi berhasil, tapi login otomatis gagal. Silakan masuk manual.",
+      };
+    }
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Terjadi kesalahan pada server saat registrasi.";
+    return { success: false, error: message };
   }
 }
 
 /**
  * Server action untuk login dengan email & password.
+ * Mendelegasikan verifikasi ke Auth.js Credentials provider.
  */
 export async function loginAction(input: LoginInput): Promise<AuthActionResult> {
   const parseResult = loginSchema.safeParse(input);
@@ -74,52 +117,50 @@ export async function loginAction(input: LoginInput): Promise<AuthActionResult> 
   const { email, password } = parseResult.data;
 
   try {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    await signIn("credentials", {
       email,
       password,
+      redirect: false,
     });
 
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-
-    revalidatePath("/", "layout");
     return { success: true };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Terjadi kesalahan pada server saat login.";
-    return {
-      success: false,
-      error: message,
-    };
+    if (err instanceof AuthError) {
+      // AuthError.type memberi tahu jenis kegagalan
+      switch (err.type) {
+        case "CredentialsSignin":
+          return {
+            success: false,
+            error: "Email atau password salah.",
+          };
+        default:
+          return {
+            success: false,
+            error: "Terjadi kesalahan autentikasi.",
+          };
+      }
+    }
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Terjadi kesalahan pada server saat login.";
+    return { success: false, error: message };
   }
 }
 
 /**
  * Server action untuk logout user dan menghapus session cookie.
+ * Memanggil signOut() dari Auth.js.
  */
 export async function logoutAction(): Promise<AuthActionResult> {
   try {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-      };
-    }
-
-    revalidatePath("/", "layout");
+    await signOut({ redirect: false });
     return { success: true };
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Terjadi kesalahan saat logout.";
-    return {
-      success: false,
-      error: message,
-    };
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Terjadi kesalahan saat logout.";
+    return { success: false, error: message };
   }
 }
