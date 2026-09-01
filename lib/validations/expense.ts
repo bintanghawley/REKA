@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+export const STANDARD_EXPENSE_CATEGORIES = [
+  "Bahan Baku Tambahan",
+  "Transportasi & Bensin",
+  "Kemasan & Plastik",
+  "Listrik, Air & Gas",
+  "Makan & Minum Karyawan",
+  "Kebersihan & Perlengkapan",
+  "Sewa & Retribusi Lapak",
+  "Lain-lain",
+] as const;
+
 export const createExpenseSchema = z.object({
   kategori: z
     .string({ required_error: "Kategori pengeluaran wajib diisi" })
@@ -16,7 +27,7 @@ export const createExpenseSchema = z.object({
 });
 
 export const updateExpenseSchema = z.object({
-  id: z.string().uuid("ID pengeluaran tidak valid"),
+  id: z.string().min(1, "ID pengeluaran wajib diisi"),
   kategori: z
     .string()
     .trim()
@@ -33,5 +44,19 @@ export const updateExpenseSchema = z.object({
     .optional(),
 });
 
+export const filterExpenseSchema = z.object({
+  tanggalMulai: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")
+    .optional(),
+  tanggalAkhir: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")
+    .optional(),
+  kategori: z.string().optional(),
+});
+
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
 export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
+export type FilterExpenseInput = z.infer<typeof filterExpenseSchema>;
+

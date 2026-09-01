@@ -4,7 +4,6 @@ import type { Profile } from "@/types/database";
 
 /**
  * Tipe SessionUser yang dikembalikan oleh Auth.js setelah login.
- * Menggantikan tipe User dari @supabase/supabase-js.
  */
 export type SessionUser = {
   id: string;
@@ -13,8 +12,7 @@ export type SessionUser = {
 
 /**
  * Mengambil authenticated user dari session JWT saat ini.
- * Membaca session dari Auth.js (httpOnly cookie) — tidak ada network request
- * ke Supabase Auth server.
+ * Membaca session dari Auth.js (httpOnly cookie).
  *
  * @returns SessionUser jika user sedang login, null jika tidak.
  */

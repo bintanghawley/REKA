@@ -1,9 +1,11 @@
 import { getTransactionsAction, getHistorySummaryAction } from "@/lib/actions/transaction";
 import { getExpensesAction } from "@/lib/actions/expense";
+import { getLocalDateString } from "@/lib/utils";
+import type { PeriodeSummary } from "@/types/database";
 import { HistoryList } from "./history-list";
 
 export default async function RiwayatPage() {
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalDateString();
 
   // Fetch initial data for "harian" (Hari Ini)
   const [summaryRes, transactionsRes, expensesRes] = await Promise.all([
@@ -12,13 +14,19 @@ export default async function RiwayatPage() {
     getExpensesAction(todayStr),
   ]);
 
-  const summary = summaryRes.data || {
+  const summary: PeriodeSummary = summaryRes.data || {
+    periode: "harian",
+    tanggal_mulai: todayStr,
+    tanggal_akhir: todayStr,
     omzet: 0,
+    total_hpp: 0,
     laba_kotor: 0,
     total_pengeluaran: 0,
     laba_bersih: 0,
     total_transaksi: 0,
+    total_qty: 0,
     total_pengeluaran_count: 0,
+    rata_rata_omzet_per_hari: 0,
   };
 
   const transactions = transactionsRes.data || [];

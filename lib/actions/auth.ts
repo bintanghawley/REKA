@@ -20,7 +20,6 @@ export type AuthActionResult = {
 /**
  * Server action untuk registrasi akun baru UMKM.
  *
- * Menggantikan supabase.auth.signUp() + trigger handle_new_user().
  * Proses dilakukan dalam satu transaksi Prisma agar atomic:
  *   1. Hash password dengan bcrypt
  *   2. Buat user baru di tabel `users`

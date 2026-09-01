@@ -98,14 +98,24 @@ export function TopProducts({ initialData, initialPeriode }: TopProductsProps) {
                     <p className="font-semibold text-sm text-slate-800 truncate">
                       {item.nama}
                     </p>
-                    {isAboveAvg && (
-                      <span className="text-[10px] bg-amber-50 border border-amber-200 text-amber-700 px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap">
-                        ⚠ Pertimbangkan restock
+                    {item.status_restock === "prioritas_tinggi" ? (
+                      <span
+                        className="text-[10px] bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
+                        title={item.rekomendasi_restock}
+                      >
+                        ⚠ Restock disarankan ({item.saran_restock_qty} unit)
                       </span>
-                    )}
+                    ) : item.status_restock === "sedang" ? (
+                      <span
+                        className="text-[10px] bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
+                        title={item.rekomendasi_restock}
+                      >
+                        ℹ Siapkan min. {item.saran_restock_qty} unit
+                      </span>
+                    ) : null}
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    {formatRupiah(item.total_omzet)} omzet
+                    {formatRupiah(item.total_omzet)} omzet • {item.kontribusi_omzet_percent}% total
                   </p>
                 </div>
 

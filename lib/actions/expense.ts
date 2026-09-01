@@ -5,10 +5,16 @@ import { requireAuth } from "@/lib/auth/session";
 import {
   createExpenseSchema,
   updateExpenseSchema,
+  filterExpenseSchema,
+  STANDARD_EXPENSE_CATEGORIES,
   type CreateExpenseInput,
   type UpdateExpenseInput,
+  type FilterExpenseInput,
 } from "@/lib/validations/expense";
-import type { PengeluaranDadakan } from "@/types/database";
+import type {
+  PengeluaranDadakan,
+  ExpenseCategorySummary,
+} from "@/types/database";
 import { revalidatePath } from "next/cache";
 
 export type ActionResult<T = unknown> = {
@@ -24,12 +30,7 @@ function toDateStr(date: Date): string {
 }
 
 /**
- * Mencatat pengeluaran dadakan baru.
- *
- * tanggal disimpan sebagai DATE native di PostgreSQL (via Prisma DateTime @db.Date).
- * Input dari client: YYYY-MM-DD string → dikonversi ke Date object.
- *
- * PENEGAKAN OWNERSHIP: user_id dari session.user.id.
+ * 1. Mencatat pengeluaran dadakan / operasional baru.
  */
 export async function createExpenseAction(
   input: CreateExpenseInput
@@ -48,14 +49,13 @@ export async function createExpenseAction(
   try {
     const user = await requireAuth();
 
-    // Konversi string YYYY-MM-DD ke Date object untuk Prisma @db.Date
     const targetDate = tanggal
       ? new Date(`${tanggal}T00:00:00.000Z`)
       : new Date(new Date().toISOString().split("T")[0] + "T00:00:00.000Z");
 
     const expense = await db.pengeluaranDadakan.create({
       data: {
-        user_id: user.id, // PENEGAKAN OWNERSHIP
+        user_id: user.id,
         kategori,
         nominal,
         tanggal: targetDate,
@@ -73,6 +73,7 @@ export async function createExpenseAction(
 
     revalidatePath("/dashboard");
     revalidatePath("/pengeluaran");
+    revalidatePath("/riwayat");
     return { success: true, data };
   } catch (err: unknown) {
     const message =
@@ -82,25 +83,36 @@ export async function createExpenseAction(
 }
 
 /**
- * Mengambil daftar pengeluaran milik user.
- *
- * Filter tanggal: Date range (gte/lte) pada kolom `tanggal` DATE.
- * PENEGAKAN OWNERSHIP: where: { user_id: user.id }
+ * 2. Mengambil daftar pengeluaran milik user (bisa string tanggal atau FilterExpenseInput).
  */
 export async function getExpensesAction(
-  tanggal?: string
+  filterOrTanggal?: string | FilterExpenseInput
 ): Promise<ActionResult<PengeluaranDadakan[]>> {
   try {
     const user = await requireAuth();
 
     const whereConditions: Record<string, unknown> = {
-      user_id: user.id, // PENEGAKAN OWNERSHIP
+      user_id: user.id,
     };
 
-    if (tanggal) {
-      const targetDate = new Date(`${tanggal}T00:00:00.000Z`);
-      const endDate = new Date(`${tanggal}T23:59:59.999Z`);
+    if (typeof filterOrTanggal === "string") {
+      const targetDate = new Date(`${filterOrTanggal}T00:00:00.000Z`);
+      const endDate = new Date(`${filterOrTanggal}T23:59:59.999Z`);
       whereConditions.tanggal = { gte: targetDate, lte: endDate };
+    } else if (typeof filterOrTanggal === "object" && filterOrTanggal !== null) {
+      const parseResult = filterExpenseSchema.safeParse(filterOrTanggal);
+      if (parseResult.success) {
+        const { tanggalMulai, tanggalAkhir, kategori } = parseResult.data;
+        if (tanggalMulai || tanggalAkhir) {
+          whereConditions.tanggal = {
+            ...(tanggalMulai && { gte: new Date(`${tanggalMulai}T00:00:00.000Z`) }),
+            ...(tanggalAkhir && { lte: new Date(`${tanggalAkhir}T23:59:59.999Z`) }),
+          };
+        }
+        if (kategori) {
+          whereConditions.kategori = kategori;
+        }
+      }
     }
 
     const expenses = await db.pengeluaranDadakan.findMany({
@@ -126,8 +138,70 @@ export async function getExpensesAction(
 }
 
 /**
- * Memperbarui pengeluaran milik user.
- * PENEGAKAN OWNERSHIP: findFirst dengan where: { id, user_id: user.id } sebelum update.
+ * 3. Analisis Breakdown Pengeluaran per Kategori
+ */
+export async function getExpenseCategorySummaryAction(
+  tanggalMulai?: string,
+  tanggalAkhir?: string
+): Promise<ActionResult<ExpenseCategorySummary[]>> {
+  try {
+    const user = await requireAuth();
+
+    const whereConditions: Record<string, unknown> = {
+      user_id: user.id,
+    };
+
+    if (tanggalMulai || tanggalAkhir) {
+      whereConditions.tanggal = {
+        ...(tanggalMulai && { gte: new Date(`${tanggalMulai}T00:00:00.000Z`) }),
+        ...(tanggalAkhir && { lte: new Date(`${tanggalAkhir}T23:59:59.999Z`) }),
+      };
+    }
+
+    const expenses = await db.pengeluaranDadakan.findMany({
+      where: whereConditions,
+      select: { kategori: true, nominal: true },
+    });
+
+    const totalNominalAll = expenses.reduce(
+      (sum, e) => sum + Number(e.nominal),
+      0
+    );
+
+    const catMap: Record<string, { total_nominal: number; count: number }> = {};
+
+    for (const exp of expenses) {
+      if (!catMap[exp.kategori]) {
+        catMap[exp.kategori] = { total_nominal: 0, count: 0 };
+      }
+      catMap[exp.kategori].total_nominal += Number(exp.nominal);
+      catMap[exp.kategori].count += 1;
+    }
+
+    const data: ExpenseCategorySummary[] = Object.entries(catMap)
+      .map(([kategori, val]) => ({
+        kategori,
+        total_nominal: val.total_nominal,
+        persentase:
+          totalNominalAll > 0
+            ? Math.round((val.total_nominal / totalNominalAll) * 1000) / 10
+            : 0,
+        count: val.count,
+      }))
+      .sort((a, b) => b.total_nominal - a.total_nominal);
+
+    return { success: true, data };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : "Gagal menghitung breakdown pengeluaran.";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * 4. Memperbarui pengeluaran milik user.
  */
 export async function updateExpenseAction(
   input: UpdateExpenseInput
@@ -146,9 +220,8 @@ export async function updateExpenseAction(
   try {
     const user = await requireAuth();
 
-    // Cek ownership
     const existing = await db.pengeluaranDadakan.findFirst({
-      where: { id, user_id: user.id }, // PENEGAKAN OWNERSHIP
+      where: { id, user_id: user.id },
       select: { id: true },
     });
 
@@ -180,6 +253,7 @@ export async function updateExpenseAction(
 
     revalidatePath("/dashboard");
     revalidatePath("/pengeluaran");
+    revalidatePath("/riwayat");
     return { success: true, data };
   } catch (err: unknown) {
     const message =
@@ -189,8 +263,7 @@ export async function updateExpenseAction(
 }
 
 /**
- * Menghapus pengeluaran milik user.
- * PENEGAKAN OWNERSHIP: deleteMany dengan where: { id, user_id: user.id }
+ * 5. Menghapus pengeluaran milik user.
  */
 export async function deleteExpenseAction(
   id: string
@@ -199,7 +272,7 @@ export async function deleteExpenseAction(
     const user = await requireAuth();
 
     const result = await db.pengeluaranDadakan.deleteMany({
-      where: { id, user_id: user.id }, // PENEGAKAN OWNERSHIP
+      where: { id, user_id: user.id },
     });
 
     if (result.count === 0) {
@@ -211,6 +284,7 @@ export async function deleteExpenseAction(
 
     revalidatePath("/dashboard");
     revalidatePath("/pengeluaran");
+    revalidatePath("/riwayat");
     return { success: true };
   } catch (err: unknown) {
     const message =
@@ -218,3 +292,4 @@ export async function deleteExpenseAction(
     return { success: false, error: message };
   }
 }
+

@@ -32,3 +32,24 @@ export function formatTanggalIndo(dateStr: string): string {
     return dateStr;
   }
 }
+
+/**
+ * Mengambil string tanggal dalam format YYYY-MM-DD sesuai timezone (default: Asia/Jakarta).
+ */
+export function getLocalDateString(
+  date: Date = new Date(),
+  timeZone: string = "Asia/Jakarta"
+): string {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    return formatter.format(date);
+  } catch {
+    return date.toISOString().split("T")[0];
+  }
+}
+

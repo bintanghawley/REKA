@@ -14,8 +14,14 @@ export const createProductSchema = z.object({
     .min(0, "HPP tidak boleh negatif"),
 });
 
+export const bulkCreateProductSchema = z.object({
+  products: z
+    .array(createProductSchema)
+    .min(1, "Minimal sertakan 1 produk"),
+});
+
 export const updateProductSchema = z.object({
-  id: z.string().uuid("ID produk tidak valid"),
+  id: z.string().min(1, "ID produk wajib diisi"),
   nama: z
     .string()
     .trim()
@@ -33,4 +39,6 @@ export const updateProductSchema = z.object({
 });
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
+export type BulkCreateProductInput = z.infer<typeof bulkCreateProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+

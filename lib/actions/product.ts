@@ -4,8 +4,10 @@ import { db } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/session";
 import {
   createProductSchema,
+  bulkCreateProductSchema,
   updateProductSchema,
   type CreateProductInput,
+  type BulkCreateProductInput,
   type UpdateProductInput,
 } from "@/lib/validations/product";
 import type { Produk } from "@/types/database";
@@ -19,11 +21,7 @@ export type ActionResult<T = unknown> = {
 };
 
 /**
- * Mengambil seluruh daftar produk milik user yang sedang terautentikasi.
- *
- * PENEGAKAN OWNERSHIP (pengganti RLS):
- * Klausa where: { user_id: user.id } memastikan hanya produk milik
- * user yang sedang login yang dikembalikan.
+ * 1. Mengambil seluruh daftar produk milik user yang sedang terautentikasi.
  */
 export async function getProductsAction(): Promise<ActionResult<Produk[]>> {
   try {
@@ -53,10 +51,7 @@ export async function getProductsAction(): Promise<ActionResult<Produk[]>> {
 }
 
 /**
- * Menambahkan produk baru. `user_id` diisi secara otomatis dari authenticated session.
- *
- * PENEGAKAN OWNERSHIP (pengganti RLS):
- * user_id di-set dari session.user.id — tidak bisa dimanipulasi dari client.
+ * 2. Menambahkan satu produk baru.
  */
 export async function createProductAction(
   input: CreateProductInput
@@ -94,6 +89,7 @@ export async function createProductAction(
 
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
+    revalidatePath("/onboarding");
     return { success: true, data };
   } catch (err: unknown) {
     const message =
@@ -103,11 +99,59 @@ export async function createProductAction(
 }
 
 /**
- * Memperbarui data produk. Hanya dapat mengubah produk milik user yang sedang login.
- *
- * PENEGAKAN OWNERSHIP (pengganti RLS):
- * updateMany dengan where: { id, user_id: user.id } — jika count === 0,
- * berarti record tidak ada atau bukan milik user ini → return FORBIDDEN.
+ * 3. Menambahkan banyak produk sekaligus (Batch / Onboarding Setup).
+ */
+export async function bulkCreateProductsAction(
+  input: BulkCreateProductInput
+): Promise<ActionResult<Produk[]>> {
+  const parseResult = bulkCreateProductSchema.safeParse(input);
+  if (!parseResult.success) {
+    return {
+      success: false,
+      error: "Validasi daftar produk gagal.",
+      fieldErrors: parseResult.error.flatten().fieldErrors,
+    };
+  }
+
+  try {
+    const user = await requireAuth();
+
+    const created = await db.$transaction(
+      parseResult.data.products.map((p) =>
+        db.produk.create({
+          data: {
+            user_id: user.id,
+            nama: p.nama,
+            harga_jual: p.harga_jual,
+            hpp: p.hpp,
+          },
+        })
+      )
+    );
+
+    const data: Produk[] = created.map((product) => ({
+      id: product.id,
+      user_id: product.user_id,
+      nama: product.nama,
+      harga_jual: Number(product.harga_jual),
+      hpp: Number(product.hpp),
+      created_at: product.created_at.toISOString(),
+      updated_at: product.updated_at.toISOString(),
+    }));
+
+    revalidatePath("/dashboard");
+    revalidatePath("/transaksi");
+    revalidatePath("/onboarding");
+    return { success: true, data };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "Gagal menyimpan daftar produk.";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * 4. Memperbarui data produk milik user.
  */
 export async function updateProductAction(
   input: UpdateProductInput
@@ -126,7 +170,6 @@ export async function updateProductAction(
   try {
     const user = await requireAuth();
 
-    // Cek ownership dulu sebelum update
     const existing = await db.produk.findFirst({
       where: { id, user_id: user.id },
       select: { id: true },
@@ -165,11 +208,7 @@ export async function updateProductAction(
 }
 
 /**
- * Menghapus produk milik user.
- *
- * PENEGAKAN OWNERSHIP (pengganti RLS):
- * deleteMany dengan where: { id, user_id: user.id } — jika count === 0,
- * reject dengan pesan FORBIDDEN.
+ * 5. Menghapus produk milik user.
  */
 export async function deleteProductAction(
   id: string
@@ -197,3 +236,4 @@ export async function deleteProductAction(
     return { success: false, error: message };
   }
 }
+

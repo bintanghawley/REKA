@@ -5,7 +5,8 @@ import {
 } from "@/lib/actions/transaction";
 import { getProductsAction } from "@/lib/actions/product";
 import { getCurrentProfile } from "@/lib/auth/session";
-import { formatTanggalIndo } from "@/lib/utils";
+import { formatTanggalIndo, getLocalDateString } from "@/lib/utils";
+import type { DailyFinancialSummary } from "@/types/database";
 
 import { FinancialCards } from "./financial-cards";
 import { QuickTransactionFab } from "./quick-transaction-fab";
@@ -15,10 +16,10 @@ import { TopProducts } from "./top-products";
 import { ProductManager } from "./product-manager";
 
 export default async function DashboardPage() {
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getLocalDateString();
   const yesterdayDate = new Date();
   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterdayStr = yesterdayDate.toISOString().split("T")[0];
+  const yesterdayStr = getLocalDateString(yesterdayDate);
 
   // Fetch all data concurrently
   const [
@@ -37,9 +38,10 @@ export default async function DashboardPage() {
     getCurrentProfile(),
   ]);
 
-  const todaySummary = todaySummaryRes.data || {
+  const todaySummary: DailyFinancialSummary = todaySummaryRes.data || {
     tanggal: todayStr,
     total_transaksi_count: 0,
+    total_qty_count: 0,
     omzet: 0,
     total_hpp: 0,
     laba_kotor: 0,
@@ -47,9 +49,10 @@ export default async function DashboardPage() {
     laba_bersih: 0,
   };
 
-  const yesterdaySummary = yesterdaySummaryRes.data || {
+  const yesterdaySummary: DailyFinancialSummary = yesterdaySummaryRes.data || {
     tanggal: yesterdayStr,
     total_transaksi_count: 0,
+    total_qty_count: 0,
     omzet: 0,
     total_hpp: 0,
     laba_kotor: 0,
