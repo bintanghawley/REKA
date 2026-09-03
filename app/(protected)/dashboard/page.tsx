@@ -1,106 +1,25 @@
-import { 
-  getDailyFinancialSummaryAction,
-  getHourlySalesAction,
-  getTopProductsAction
-} from "@/lib/actions/transaction";
+import { getOptibizDashboardDataAction } from "@/lib/actions/optibiz-dashboard";
 import { getProductsAction } from "@/lib/actions/product";
-import { getCurrentProfile } from "@/lib/auth/session";
-import { formatTanggalIndo, getLocalDateString } from "@/lib/utils";
-import type { DailyFinancialSummary } from "@/types/database";
-
-import { FinancialCards } from "./financial-cards";
+import { OptibizDashboardView } from "./optibiz-dashboard-view";
 import { QuickTransactionFab } from "./quick-transaction-fab";
 import { QuickExpenseModal } from "./quick-expense-modal";
-import { HourlySalesChart } from "./hourly-sales-chart";
-import { TopProducts } from "./top-products";
-import { ProductManager } from "./product-manager";
 
 export default async function DashboardPage() {
-  const todayStr = getLocalDateString();
-  const yesterdayDate = new Date();
-  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-  const yesterdayStr = getLocalDateString(yesterdayDate);
-
-  // Fetch all data concurrently
-  const [
-    todaySummaryRes,
-    yesterdaySummaryRes,
-    hourlySalesRes,
-    topProductsRes,
-    productsRes,
-    profile,
-  ] = await Promise.all([
-    getDailyFinancialSummaryAction(todayStr),
-    getDailyFinancialSummaryAction(yesterdayStr),
-    getHourlySalesAction(todayStr),
-    getTopProductsAction("hari_ini"),
+  const [dashboardData, productsRes] = await Promise.all([
+    getOptibizDashboardDataAction(),
     getProductsAction(),
-    getCurrentProfile(),
   ]);
 
-  const todaySummary: DailyFinancialSummary = todaySummaryRes.data || {
-    tanggal: todayStr,
-    total_transaksi_count: 0,
-    total_qty_count: 0,
-    omzet: 0,
-    total_hpp: 0,
-    laba_kotor: 0,
-    total_pengeluaran: 0,
-    laba_bersih: 0,
-  };
-
-  const yesterdaySummary: DailyFinancialSummary = yesterdaySummaryRes.data || {
-    tanggal: yesterdayStr,
-    total_transaksi_count: 0,
-    total_qty_count: 0,
-    omzet: 0,
-    total_hpp: 0,
-    laba_kotor: 0,
-    total_pengeluaran: 0,
-    laba_bersih: 0,
-  };
-
-  const hourlySales = hourlySalesRes.data || [];
-  const topProducts = topProductsRes.data || [];
   const products = productsRes.data || [];
 
   return (
-    <div className="space-y-6 pb-24">
-      {/* Header Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-            {profile?.nama_usaha || "Usaha Saya"}
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Dashboard Keuangan: {formatTanggalIndo(todayStr)}
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <OptibizDashboardView data={dashboardData} />
 
-      {/* Financial Metrics Cards (Today vs Yesterday) */}
-      <FinancialCards today={todaySummary} yesterday={yesterdaySummary} />
-
-      {/* Insights Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Hourly Chart takes up 2 columns on large screens */}
-        <div className="lg:col-span-2">
-          <HourlySalesChart data={hourlySales} />
-        </div>
-        {/* Top Products takes up 1 column */}
-        <div className="lg:col-span-1">
-          <TopProducts initialData={topProducts} initialPeriode="hari_ini" />
-        </div>
-      </div>
-
-      {/* Product Manager */}
-      <div className="pt-4 border-t border-slate-200">
-        <ProductManager initialProducts={products} />
-      </div>
-
-      {/* Floating Action Buttons */}
+      {/* Floating Action Modals for Quick Expenses & POS Cashier */}
       <QuickExpenseModal />
       <QuickTransactionFab products={products} />
     </div>
   );
 }
+

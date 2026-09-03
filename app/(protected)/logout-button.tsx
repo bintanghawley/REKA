@@ -3,6 +3,7 @@
 import { logoutAction } from "@/lib/actions/auth";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { LogOut, Loader2 } from "lucide-react";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -25,9 +26,15 @@ export function LogoutButton() {
     <button
       onClick={handleLogout}
       disabled={isLoading}
-      className="text-xs px-3 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium disabled:opacity-50"
+      className="w-full py-2.5 px-4 bg-[#D61F1F] hover:bg-[#B91C1C] text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
     >
-      {isLoading ? "Keluar..." : "Keluar"}
+      {isLoading ? (
+        <Loader2 size={16} className="animate-spin" />
+      ) : (
+        <LogOut size={16} />
+      )}
+      <span>Logout</span>
     </button>
   );
 }
+

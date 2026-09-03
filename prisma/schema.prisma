@@ -61,6 +61,9 @@ model Produk {
   nama       String
   harga_jual Float
   hpp        Float
+  kategori   String   @default("Makanan")
+  status     String   @default("Tersedia")
+  foto       String?
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

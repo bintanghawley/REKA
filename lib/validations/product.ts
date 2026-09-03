@@ -12,6 +12,9 @@ export const createProductSchema = z.object({
   hpp: z.coerce
     .number({ required_error: "HPP wajib diisi", invalid_type_error: "HPP harus berupa angka" })
     .min(0, "HPP tidak boleh negatif"),
+  kategori: z.string().trim().optional().default("Makanan"),
+  status: z.enum(["Tersedia", "Habis"]).optional().default("Tersedia"),
+  foto: z.string().nullable().optional(),
 });
 
 export const bulkCreateProductSchema = z.object({
@@ -36,9 +39,13 @@ export const updateProductSchema = z.object({
     .number({ invalid_type_error: "HPP harus berupa angka" })
     .min(0, "HPP tidak boleh negatif")
     .optional(),
+  kategori: z.string().trim().optional(),
+  status: z.enum(["Tersedia", "Habis"]).optional(),
+  foto: z.string().nullable().optional(),
 });
 
-export type CreateProductInput = z.infer<typeof createProductSchema>;
-export type BulkCreateProductInput = z.infer<typeof bulkCreateProductSchema>;
-export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+export type CreateProductInput = z.input<typeof createProductSchema>;
+export type BulkCreateProductInput = z.input<typeof bulkCreateProductSchema>;
+export type UpdateProductInput = z.input<typeof updateProductSchema>;
+
 

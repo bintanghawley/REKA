@@ -27,11 +27,14 @@ export type Produk = {
   nama: string;
   harga_jual: number;
   hpp: number;
+  kategori?: string;
+  status?: string;
+  foto?: string | null;
   created_at: string;
   updated_at: string;
 };
 export type ProdukInsert = Omit<Produk, "id" | "created_at" | "updated_at">;
-export type ProdukUpdate = Partial<Pick<Produk, "nama" | "harga_jual" | "hpp">>;
+export type ProdukUpdate = Partial<Pick<Produk, "nama" | "harga_jual" | "hpp" | "kategori" | "status" | "foto">>;
 
 // Model: transaksi
 // PENTING: harga_jual_saat_transaksi & hpp_saat_transaksi adalah snapshot

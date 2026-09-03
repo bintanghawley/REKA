@@ -38,6 +38,9 @@ export async function getProductsAction(): Promise<ActionResult<Produk[]>> {
       nama: p.nama,
       harga_jual: Number(p.harga_jual),
       hpp: Number(p.hpp),
+      kategori: p.kategori ?? "Makanan",
+      status: p.status ?? "Tersedia",
+      foto: p.foto ?? null,
       created_at: p.created_at.toISOString(),
       updated_at: p.updated_at.toISOString(),
     }));
@@ -74,6 +77,9 @@ export async function createProductAction(
         nama: parseResult.data.nama,
         harga_jual: parseResult.data.harga_jual,
         hpp: parseResult.data.hpp,
+        kategori: parseResult.data.kategori || "Makanan",
+        status: parseResult.data.status || "Tersedia",
+        foto: parseResult.data.foto || null,
       },
     });
 
@@ -83,10 +89,14 @@ export async function createProductAction(
       nama: product.nama,
       harga_jual: Number(product.harga_jual),
       hpp: Number(product.hpp),
+      kategori: product.kategori ?? "Makanan",
+      status: product.status ?? "Tersedia",
+      foto: product.foto ?? null,
       created_at: product.created_at.toISOString(),
       updated_at: product.updated_at.toISOString(),
     };
 
+    revalidatePath("/produk");
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
     revalidatePath("/onboarding");
@@ -124,6 +134,9 @@ export async function bulkCreateProductsAction(
             nama: p.nama,
             harga_jual: p.harga_jual,
             hpp: p.hpp,
+            kategori: p.kategori || "Makanan",
+            status: p.status || "Tersedia",
+            foto: p.foto || null,
           },
         })
       )
@@ -135,10 +148,14 @@ export async function bulkCreateProductsAction(
       nama: product.nama,
       harga_jual: Number(product.harga_jual),
       hpp: Number(product.hpp),
+      kategori: product.kategori ?? "Makanan",
+      status: product.status ?? "Tersedia",
+      foto: product.foto ?? null,
       created_at: product.created_at.toISOString(),
       updated_at: product.updated_at.toISOString(),
     }));
 
+    revalidatePath("/produk");
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
     revalidatePath("/onboarding");
@@ -193,10 +210,14 @@ export async function updateProductAction(
       nama: product.nama,
       harga_jual: Number(product.harga_jual),
       hpp: Number(product.hpp),
+      kategori: product.kategori ?? "Makanan",
+      status: product.status ?? "Tersedia",
+      foto: product.foto ?? null,
       created_at: product.created_at.toISOString(),
       updated_at: product.updated_at.toISOString(),
     };
 
+    revalidatePath("/produk");
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
     return { success: true, data };
@@ -227,6 +248,7 @@ export async function deleteProductAction(
       };
     }
 
+    revalidatePath("/produk");
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
     return { success: true };
