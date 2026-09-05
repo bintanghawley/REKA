@@ -253,9 +253,6 @@ export function OptibizDashboardView({ data }: Props) {
       {/* 1. EXECUTIVE HEADER STATUS BAR (DESIGN.md: Card White, Linen Border, Mono Eyebrow, Editorial Heading) */}
       <div className="bg-[#ffffff] rounded-[12px] p-5 sm:p-6 border border-[#e4e5e1] shadow-[rgba(228,229,225,0.3)_0px_1px_0px_0px_inset,rgba(110,111,109,0.1)_0px_-1px_0px_0px_inset] flex flex-col md:flex-row md:items-center justify-between gap-5 relative">
         <div className="space-y-1.5 z-10">
-          <div className="font-mono text-[11px] font-medium uppercase tracking-[0.88px] text-[#f35b22]">
-            [ STATUS USAHA // {welcome.username} ]
-          </div>
           <h1 className="text-2xl sm:text-[28px] font-semibold text-[#141415] tracking-tight leading-[1.2]">
             Ringkasan Usaha: <span className="text-[#f35b22]">{welcome.username}</span>
           </h1>

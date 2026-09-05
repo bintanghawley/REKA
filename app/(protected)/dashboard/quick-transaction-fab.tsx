@@ -436,9 +436,11 @@ export function QuickTransactionFab({ products: initialProducts, userId }: Quick
                               <span className="text-xs font-black text-primary">
                                 {formatRupiah(prod.harga_jual)}
                               </span>
-                              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded-md border border-sky-200">
-                                {prod.kategori || "Umum"}
-                              </span>
+                              {prod.kategori ? (
+                                <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded-md border border-sky-200">
+                                  {prod.kategori}
+                                </span>
+                              ) : null}
                             </div>
                           </div>
                         </div>

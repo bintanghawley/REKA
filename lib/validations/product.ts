@@ -12,7 +12,7 @@ export const createProductSchema = z.object({
   hpp: z.coerce
     .number({ required_error: "HPP wajib diisi", invalid_type_error: "HPP harus berupa angka" })
     .min(0, "HPP tidak boleh negatif"),
-  kategori: z.string().trim().optional().default("Makanan"),
+  kategori: z.string().trim().optional(),
   status: z.enum(["Tersedia", "Habis"]).optional().default("Tersedia"),
   foto: z.string().nullable().optional(),
 });

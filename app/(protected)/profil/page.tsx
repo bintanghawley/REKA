@@ -8,11 +8,6 @@ export default async function ProfilPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header with DESIGN.md eyebrow */}
       <div className="border-b border-[#e4e5e1] pb-5">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[11px] uppercase tracking-[0.88px] text-[#f35b22] bg-[#f35b22]/10 px-2 py-0.5 rounded-[4px] font-medium border border-[#f35b22]/20">
-            [ PENGATURAN // IDENTITAS USAHA ]
-          </span>
-        </div>
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#141415]">
           Profil <span className="text-[#f35b22]">Usaha</span>
         </h1>
