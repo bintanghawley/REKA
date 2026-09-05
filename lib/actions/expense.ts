@@ -15,6 +15,7 @@ import type {
   PengeluaranDadakan,
   ExpenseCategorySummary,
 } from "@/types/database";
+import { getLocalDateString } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
 export type ActionResult<T = unknown> = {
@@ -50,8 +51,8 @@ export async function createExpenseAction(
     const user = await requireAuth();
 
     const targetDate = tanggal
-      ? new Date(`${tanggal}T00:00:00.000Z`)
-      : new Date(new Date().toISOString().split("T")[0] + "T00:00:00.000Z");
+      ? new Date(`${tanggal}T00:00:00+07:00`)
+      : new Date(`${getLocalDateString()}T00:00:00+07:00`);
 
     const expense = await db.pengeluaranDadakan.create({
       data: {
@@ -96,8 +97,8 @@ export async function getExpensesAction(
     };
 
     if (typeof filterOrTanggal === "string") {
-      const targetDate = new Date(`${filterOrTanggal}T00:00:00.000Z`);
-      const endDate = new Date(`${filterOrTanggal}T23:59:59.999Z`);
+      const targetDate = new Date(`${filterOrTanggal}T00:00:00+07:00`);
+      const endDate = new Date(`${filterOrTanggal}T23:59:59.999+07:00`);
       whereConditions.tanggal = { gte: targetDate, lte: endDate };
     } else if (typeof filterOrTanggal === "object" && filterOrTanggal !== null) {
       const parseResult = filterExpenseSchema.safeParse(filterOrTanggal);
@@ -105,8 +106,8 @@ export async function getExpensesAction(
         const { tanggalMulai, tanggalAkhir, kategori } = parseResult.data;
         if (tanggalMulai || tanggalAkhir) {
           whereConditions.tanggal = {
-            ...(tanggalMulai && { gte: new Date(`${tanggalMulai}T00:00:00.000Z`) }),
-            ...(tanggalAkhir && { lte: new Date(`${tanggalAkhir}T23:59:59.999Z`) }),
+            ...(tanggalMulai && { gte: new Date(`${tanggalMulai}T00:00:00+07:00`) }),
+            ...(tanggalAkhir && { lte: new Date(`${tanggalAkhir}T23:59:59.999+07:00`) }),
           };
         }
         if (kategori) {
@@ -153,8 +154,8 @@ export async function getExpenseCategorySummaryAction(
 
     if (tanggalMulai || tanggalAkhir) {
       whereConditions.tanggal = {
-        ...(tanggalMulai && { gte: new Date(`${tanggalMulai}T00:00:00.000Z`) }),
-        ...(tanggalAkhir && { lte: new Date(`${tanggalAkhir}T23:59:59.999Z`) }),
+        ...(tanggalMulai && { gte: new Date(`${tanggalMulai}T00:00:00+07:00`) }),
+        ...(tanggalAkhir && { lte: new Date(`${tanggalAkhir}T23:59:59.999+07:00`) }),
       };
     }
 
@@ -234,7 +235,7 @@ export async function updateExpenseAction(
 
     const updateData: Record<string, unknown> = { ...otherFields };
     if (tanggal) {
-      updateData.tanggal = new Date(`${tanggal}T00:00:00.000Z`);
+      updateData.tanggal = new Date(`${tanggal}T00:00:00+07:00`);
     }
 
     const expense = await db.pengeluaranDadakan.update({

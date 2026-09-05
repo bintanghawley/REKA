@@ -1,6 +1,6 @@
 // =============================================================================
 // PRISMA SCHEMA — REKA UMKM Daily Transaction Logging
-// Database: SQLite via Prisma ORM
+// Database: PostgreSQL via Supabase
 // =============================================================================
 
 generator client {
@@ -8,8 +8,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // -----------------------------------------------------------------------------
@@ -64,6 +65,7 @@ model Produk {
   kategori   String   @default("Makanan")
   status     String   @default("Tersedia")
   foto       String?
+  is_deleted Boolean  @default(false)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -72,6 +74,7 @@ model Produk {
   transaksi Transaksi[]
 
   @@index([user_id])
+  @@index([user_id, is_deleted])
   @@map("produk")
 }
 

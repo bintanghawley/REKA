@@ -28,7 +28,7 @@ export async function getProductsAction(): Promise<ActionResult<Produk[]>> {
     const user = await requireAuth();
 
     const products = await db.produk.findMany({
-      where: { user_id: user.id },
+      where: { user_id: user.id, is_deleted: false },
       orderBy: { nama: "asc" },
     });
 
@@ -41,6 +41,7 @@ export async function getProductsAction(): Promise<ActionResult<Produk[]>> {
       kategori: p.kategori || "",
       status: p.status ?? "Tersedia",
       foto: p.foto ?? null,
+      is_deleted: p.is_deleted,
       created_at: p.created_at.toISOString(),
       updated_at: p.updated_at.toISOString(),
     }));
@@ -237,15 +238,36 @@ export async function deleteProductAction(
   try {
     const user = await requireAuth();
 
-    const result = await db.produk.deleteMany({
-      where: { id, user_id: user.id },
+    // Periksa apakah produk memiliki riwayat transaksi penjualan
+    const transactionCount = await db.transaksi.count({
+      where: { produk_id: id, user_id: user.id },
     });
 
-    if (result.count === 0) {
-      return {
-        success: false,
-        error: "Produk tidak ditemukan atau Anda tidak memiliki akses.",
-      };
+    if (transactionCount > 0) {
+      // Soft-delete: tandai is_deleted agar integritas data transaksi historis tetap utuh
+      const result = await db.produk.updateMany({
+        where: { id, user_id: user.id },
+        data: { is_deleted: true, status: "Habis" },
+      });
+
+      if (result.count === 0) {
+        return {
+          success: false,
+          error: "Produk tidak ditemukan atau Anda tidak memiliki akses.",
+        };
+      }
+    } else {
+      // Belum ada transaksi: aman untuk dihapus permanen (hard-delete)
+      const result = await db.produk.deleteMany({
+        where: { id, user_id: user.id },
+      });
+
+      if (result.count === 0) {
+        return {
+          success: false,
+          error: "Produk tidak ditemukan atau Anda tidak memiliki akses.",
+        };
+      }
     }
 
     revalidatePath("/produk");

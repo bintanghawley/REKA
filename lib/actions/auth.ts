@@ -91,11 +91,11 @@ export async function registerAction(
         error: "Registrasi berhasil, tapi login otomatis gagal. Silakan masuk manual.",
       };
     }
-    const message =
-      err instanceof Error
-        ? err.message
-        : "Terjadi kesalahan pada server saat registrasi.";
-    return { success: false, error: message };
+    console.error("[registerAction Error]", err);
+    return {
+      success: false,
+      error: "Terjadi kesalahan pada server saat registrasi. Silakan coba lagi nanti.",
+    };
   }
 }
 
@@ -139,11 +139,11 @@ export async function loginAction(input: LoginInput): Promise<AuthActionResult> 
           };
       }
     }
-    const message =
-      err instanceof Error
-        ? err.message
-        : "Terjadi kesalahan pada server saat login.";
-    return { success: false, error: message };
+    console.error("[loginAction Error]", err);
+    return {
+      success: false,
+      error: "Terjadi kesalahan pada server saat login. Silakan coba lagi nanti.",
+    };
   }
 }
 
@@ -156,10 +156,10 @@ export async function logoutAction(): Promise<AuthActionResult> {
     await signOut({ redirect: false });
     return { success: true };
   } catch (err: unknown) {
-    const message =
-      err instanceof Error
-        ? err.message
-        : "Terjadi kesalahan saat logout.";
-    return { success: false, error: message };
+    console.error("[logoutAction Error]", err);
+    return {
+      success: false,
+      error: "Terjadi kesalahan saat logout.",
+    };
   }
 }

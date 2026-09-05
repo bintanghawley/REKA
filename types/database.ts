@@ -30,6 +30,7 @@ export type Produk = {
   kategori?: string;
   status?: string;
   foto?: string | null;
+  is_deleted?: boolean;
   created_at: string;
   updated_at: string;
 };

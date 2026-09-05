@@ -34,14 +34,14 @@ export type ActionResult<T = unknown> = {
 // Helper: Date & Time Utilities
 // =============================================================================
 
-/** Awal hari (00:00:00 UTC) untuk format tanggal YYYY-MM-DD */
+/** Awal hari (00:00:00 WIB) untuk format tanggal YYYY-MM-DD */
 function startOfDay(dateStr: string): Date {
-  return new Date(`${dateStr}T00:00:00.000Z`);
+  return new Date(`${dateStr}T00:00:00+07:00`);
 }
 
-/** Akhir hari (23:59:59.999 UTC) untuk format tanggal YYYY-MM-DD */
+/** Akhir hari (23:59:59.999 WIB) untuk format tanggal YYYY-MM-DD */
 function endOfDay(dateStr: string): Date {
-  return new Date(`${dateStr}T23:59:59.999Z`);
+  return new Date(`${dateStr}T23:59:59.999+07:00`);
 }
 
 /** Tanggal hari ini dalam format YYYY-MM-DD (WIB / Asia-Jakarta) */
@@ -49,11 +49,16 @@ function todayStr(): string {
   return getLocalDateString();
 }
 
-/** Mengambil string YYYY-MM-DD satu hari sebelum target tanggal */
+/** Mengambil string YYYY-MM-DD satu hari sebelum target tanggal (WIB) */
 function getPreviousDateStr(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00.000Z`);
-  d.setUTCDate(d.getUTCDate() - 1);
-  return d.toISOString().split("T")[0];
+  const d = new Date(`${dateStr}T00:00:00+07:00`);
+  d.setDate(d.getDate() - 1);
+  return getLocalDateString(d);
+}
+
+/** Mengambil jam transaksi dalam zona waktu lokal WIB / Asia-Jakarta (0-23) */
+function getLocalHour(date: Date): number {
+  return (date.getUTCHours() + 7) % 24;
 }
 
 /** Menghitung persentase perubahan antara nilai hari ini vs kemarin */
@@ -481,7 +486,7 @@ export async function getHourlySalesAction(
     }
 
     for (const trx of transactions) {
-      const jam = trx.waktu.getUTCHours();
+      const jam = getLocalHour(trx.waktu);
       const q = Number(trx.qty);
       hourlyMap[jam].omzet += Number(trx.harga_jual_saat_transaksi) * q;
       hourlyMap[jam].count += 1;
@@ -817,7 +822,7 @@ export async function getEndOfDaySummaryAction(
       total_hpp += Number(trx.hpp_saat_transaksi) * q;
       total_item_terjual += q;
 
-      const jam = trx.waktu.getUTCHours();
+      const jam = getLocalHour(trx.waktu);
       hourlyDistribution[jam].omzet += trxOmzet;
       hourlyDistribution[jam].count += 1;
     }
