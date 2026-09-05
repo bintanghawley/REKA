@@ -112,6 +112,8 @@ export function LandingHeader() {
             <img
               src="/logo.png"
               alt="REKA"
+              loading="lazy"
+              decoding="async"
               className="h-7 w-auto object-contain"
             />
           </Link>
@@ -418,6 +420,8 @@ export function HeroPOSSimulator() {
                       <img
                         src={prod.url}
                         alt={prod.label}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                       {qtyInCart > 0 && (
@@ -515,6 +519,8 @@ export function HeroPOSSimulator() {
                         <img
                           src={prod.url}
                           alt={prod.label}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -1541,6 +1547,8 @@ export function ProductCatalogShowcase() {
                     <img
                       src={prod.foto}
                       alt={prod.nama}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                   </div>

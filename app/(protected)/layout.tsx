@@ -30,6 +30,8 @@ export default async function ProtectedLayout({
             <img
               src="/logo.png"
               alt="REKA"
+              loading="lazy"
+              decoding="async"
               className="h-8 w-auto object-contain group-hover:scale-105 transition-transform"
             />
           </Link>
@@ -66,6 +68,8 @@ export default async function ProtectedLayout({
           <img
             src="/logo.png"
             alt="REKA"
+            loading="lazy"
+            decoding="async"
             className="h-7 w-auto object-contain"
           />
         </Link>

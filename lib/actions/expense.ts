@@ -4,17 +4,11 @@ import { db } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/session";
 import {
   createExpenseSchema,
-  updateExpenseSchema,
   filterExpenseSchema,
-  STANDARD_EXPENSE_CATEGORIES,
   type CreateExpenseInput,
-  type UpdateExpenseInput,
   type FilterExpenseInput,
 } from "@/lib/validations/expense";
-import type {
-  PengeluaranDadakan,
-  ExpenseCategorySummary,
-} from "@/types/database";
+import type { PengeluaranDadakan } from "@/types/database";
 import { getLocalDateString } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
@@ -138,130 +132,6 @@ export async function getExpensesAction(
   }
 }
 
-/**
- * 3. Analisis Breakdown Pengeluaran per Kategori
- */
-export async function getExpenseCategorySummaryAction(
-  tanggalMulai?: string,
-  tanggalAkhir?: string
-): Promise<ActionResult<ExpenseCategorySummary[]>> {
-  try {
-    const user = await requireAuth();
-
-    const whereConditions: Record<string, unknown> = {
-      user_id: user.id,
-    };
-
-    if (tanggalMulai || tanggalAkhir) {
-      whereConditions.tanggal = {
-        ...(tanggalMulai && { gte: new Date(`${tanggalMulai}T00:00:00+07:00`) }),
-        ...(tanggalAkhir && { lte: new Date(`${tanggalAkhir}T23:59:59.999+07:00`) }),
-      };
-    }
-
-    const expenses = await db.pengeluaranDadakan.findMany({
-      where: whereConditions,
-      select: { kategori: true, nominal: true },
-    });
-
-    const totalNominalAll = expenses.reduce(
-      (sum, e) => sum + Number(e.nominal),
-      0
-    );
-
-    const catMap: Record<string, { total_nominal: number; count: number }> = {};
-
-    for (const exp of expenses) {
-      if (!catMap[exp.kategori]) {
-        catMap[exp.kategori] = { total_nominal: 0, count: 0 };
-      }
-      catMap[exp.kategori].total_nominal += Number(exp.nominal);
-      catMap[exp.kategori].count += 1;
-    }
-
-    const data: ExpenseCategorySummary[] = Object.entries(catMap)
-      .map(([kategori, val]) => ({
-        kategori,
-        total_nominal: val.total_nominal,
-        persentase:
-          totalNominalAll > 0
-            ? Math.round((val.total_nominal / totalNominalAll) * 1000) / 10
-            : 0,
-        count: val.count,
-      }))
-      .sort((a, b) => b.total_nominal - a.total_nominal);
-
-    return { success: true, data };
-  } catch (err: unknown) {
-    const message =
-      err instanceof Error
-        ? err.message
-        : "Gagal menghitung breakdown pengeluaran.";
-    return { success: false, error: message };
-  }
-}
-
-/**
- * 4. Memperbarui pengeluaran milik user.
- */
-export async function updateExpenseAction(
-  input: UpdateExpenseInput
-): Promise<ActionResult<PengeluaranDadakan>> {
-  const parseResult = updateExpenseSchema.safeParse(input);
-  if (!parseResult.success) {
-    return {
-      success: false,
-      error: "Validasi pembaruan pengeluaran gagal.",
-      fieldErrors: parseResult.error.flatten().fieldErrors,
-    };
-  }
-
-  const { id, tanggal, ...otherFields } = parseResult.data;
-
-  try {
-    const user = await requireAuth();
-
-    const existing = await db.pengeluaranDadakan.findFirst({
-      where: { id, user_id: user.id },
-      select: { id: true },
-    });
-
-    if (!existing) {
-      return {
-        success: false,
-        error: "Pengeluaran tidak ditemukan atau Anda tidak memiliki akses.",
-      };
-    }
-
-    const updateData: Record<string, unknown> = { ...otherFields };
-    if (tanggal) {
-      updateData.tanggal = new Date(`${tanggal}T00:00:00+07:00`);
-    }
-
-    const expense = await db.pengeluaranDadakan.update({
-      where: { id },
-      data: updateData,
-    });
-
-    const data: PengeluaranDadakan = {
-      id: expense.id,
-      user_id: expense.user_id,
-      kategori: expense.kategori,
-      nominal: Number(expense.nominal),
-      tanggal: toDateStr(expense.tanggal),
-      created_at: expense.created_at.toISOString(),
-    };
-
-    revalidatePath("/dashboard");
-    revalidatePath("/pengeluaran");
-    revalidatePath("/riwayat");
-    return { success: true, data };
-  } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : "Gagal memperbarui pengeluaran.";
-    return { success: false, error: message };
-  }
-}
 
 /**
  * 5. Menghapus pengeluaran milik user.

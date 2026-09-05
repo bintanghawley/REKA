@@ -414,6 +414,8 @@ export function PosKasirView({ initialProducts, userId }: Props) {
                           <img
                             src={photoUrl}
                             alt={prod.nama}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                           />
                         ) : (
@@ -533,6 +535,8 @@ export function PosKasirView({ initialProducts, userId }: Props) {
                         <img
                           src={photoUrl}
                           alt={prod.nama}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                       </div>

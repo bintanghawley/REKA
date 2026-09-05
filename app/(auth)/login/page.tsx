@@ -49,6 +49,8 @@ export default function LoginPage() {
           <img
             src="/logo.png"
             alt="REKA"
+            loading="lazy"
+            decoding="async"
             className="h-8 sm:h-9 w-auto object-contain group-hover:scale-105 transition-transform"
           />
         </Link>

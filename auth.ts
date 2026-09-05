@@ -7,6 +7,7 @@ import { loginSchema } from "@/lib/validations/auth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  secret: process.env.AUTH_SECRET || "reka_umkm_development_super_secret_key_32_chars",
   providers: [
     Credentials({
       name: "credentials",

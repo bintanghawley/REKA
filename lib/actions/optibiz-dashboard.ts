@@ -103,19 +103,23 @@ export async function getOptibizDashboardDataAction(): Promise<OptibizDashboardD
   const user = await requireAuth();
   const profile = await getCurrentProfile();
 
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
+  // Waktu standar Indonesia (WIB = UTC+7)
+  const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+  const nowWib = new Date(Date.now() + WIB_OFFSET_MS);
+  const currentYear = nowWib.getUTCFullYear();
+  const currentMonth = nowWib.getUTCMonth();
+  const currentDate = nowWib.getUTCDate();
 
-  const startOfToday = new Date(currentYear, currentMonth, now.getDate(), 0, 0, 0, 0);
-  const endOfToday = new Date(currentYear, currentMonth, now.getDate(), 23, 59, 59, 999);
+  // Batas-batas waktu dalam UTC untuk query database
+  const startOfToday = new Date(Date.UTC(currentYear, currentMonth, currentDate) - WIB_OFFSET_MS);
+  const endOfToday = new Date(Date.UTC(currentYear, currentMonth, currentDate, 23, 59, 59, 999) - WIB_OFFSET_MS);
 
-  const startOf3DaysAgo = new Date(currentYear, currentMonth, now.getDate() - 3, 0, 0, 0, 0);
-  const startOf7DaysAgo = new Date(currentYear, currentMonth, now.getDate() - 6, 0, 0, 0, 0);
-  const startOfMonth = new Date(currentYear, currentMonth, 1, 0, 0, 0, 0);
-  const startOf4MonthsAgo = new Date(currentYear, currentMonth - 3, 1, 0, 0, 0, 0);
-  const startOfYear = new Date(currentYear, 0, 1, 0, 0, 0, 0);
-  const startOf4YearsAgo = new Date(currentYear - 3, 0, 1, 0, 0, 0, 0);
+  const startOf3DaysAgo = new Date(Date.UTC(currentYear, currentMonth, currentDate - 3) - WIB_OFFSET_MS);
+  const startOf7DaysAgo = new Date(Date.UTC(currentYear, currentMonth, currentDate - 6) - WIB_OFFSET_MS);
+  const startOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1) - WIB_OFFSET_MS);
+  const startOf4MonthsAgo = new Date(Date.UTC(currentYear, currentMonth - 3, 1) - WIB_OFFSET_MS);
+  const startOfYear = new Date(Date.UTC(currentYear, 0, 1) - WIB_OFFSET_MS);
+  const startOf4YearsAgo = new Date(Date.UTC(currentYear - 3, 0, 1) - WIB_OFFSET_MS);
 
   const monthNamesIndo = [
     "JANUARI", "FEBRUARI", "MARET", "APRIL", "MEI", "JUNI",
@@ -127,23 +131,27 @@ export async function getOptibizDashboardDataAction(): Promise<OptibizDashboardD
   ];
   const bulanIniName = monthNamesIndo[currentMonth];
 
-  const profileCreatedAt = profile?.created_at ? new Date(profile.created_at) : now;
-  const diffTime = Math.abs(now.getTime() - profileCreatedAt.getTime());
+  const profileCreatedAt = profile?.created_at ? new Date(profile.created_at) : new Date();
+  const diffTime = Math.abs(Date.now() - profileCreatedAt.getTime());
   const daysCount = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-  // Query all user transactions from up to 4 years ago
+  // Query transaksi yang diperlukan (hanya select field esensial untuk menghemat RAM)
   const allTrx = await db.transaksi.findMany({
     where: {
       user_id: user.id,
       waktu: { gte: startOf4YearsAgo, lte: endOfToday },
     },
-    include: {
+    select: {
+      qty: true,
+      harga_jual_saat_transaksi: true,
+      hpp_saat_transaksi: true,
+      waktu: true,
       produk: { select: { nama: true } },
     },
     orderBy: { waktu: "asc" },
   });
 
-  // Query all user expenses from up to 4 years ago
+  // Query pengeluaran user
   const allExpenses = await db.pengeluaranDadakan.findMany({
     where: {
       user_id: user.id,
@@ -195,8 +203,16 @@ export async function getOptibizDashboardDataAction(): Promise<OptibizDashboardD
     const hppTrx = hpp * qty;
     const trxTime = t.waktu;
 
-    // Helper start of day for t.waktu
-    const tStartOfDay = new Date(trxTime.getFullYear(), trxTime.getMonth(), trxTime.getDate(), 0, 0, 0, 0);
+    // Normalisasi waktu transaksi ke WIB
+    const trxWib = new Date(trxTime.getTime() + WIB_OFFSET_MS);
+    const trxWibYear = trxWib.getUTCFullYear();
+    const trxWibMonth = trxWib.getUTCMonth();
+    const trxWibDate = trxWib.getUTCDate();
+    const trxWibHour = trxWib.getUTCHours();
+    const trxWibDayOfWeek = trxWib.getUTCDay();
+
+    // Helper start of day WIB untuk t.waktu
+    const tStartOfDay = new Date(Date.UTC(trxWibYear, trxWibMonth, trxWibDate) - WIB_OFFSET_MS);
 
     // Check Today
     if (trxTime >= startOfToday && trxTime <= endOfToday) {
@@ -231,7 +247,7 @@ export async function getOptibizDashboardDataAction(): Promise<OptibizDashboardD
       const dayDiff = Math.floor((startOfToday.getTime() - tStartOfDay.getTime()) / (1000 * 60 * 60 * 24));
       if (dayDiff >= 0 && dayDiff < 4) {
         harianOmzet[dayDiff] += omzetTrx;
-        const h = trxTime.getHours();
+        const h = trxWibHour;
         let slotIdx = 0;
         if (h < 9) slotIdx = 0;
         else if (h < 11) slotIdx = 1;
@@ -247,22 +263,21 @@ export async function getOptibizDashboardDataAction(): Promise<OptibizDashboardD
 
     // --- 2. MINGGUAN MATRIX (Current Month) ---
     if (trxTime >= startOfMonth && trxTime <= endOfToday) {
-      const dayOfMonth = trxTime.getDate();
+      const dayOfMonth = trxWibDate;
       let weekIdx = Math.floor((dayOfMonth - 1) / 7);
       if (weekIdx > 3) weekIdx = 3;
       weekOmzet[weekIdx] += omzetTrx;
 
-      const dayOfWeek = trxTime.getDay();
-      const dayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const dayIdx = trxWibDayOfWeek === 0 ? 6 : trxWibDayOfWeek - 1;
       weeklyMatrix[dayIdx][weekIdx] += qty;
     }
 
     // --- 3. BULANAN MATRIX (Last 4 Months) ---
     if (trxTime >= startOf4MonthsAgo && trxTime <= endOfToday) {
-      const monthDiff = (currentYear - trxTime.getFullYear()) * 12 + (currentMonth - trxTime.getMonth());
+      const monthDiff = (currentYear - trxWibYear) * 12 + (currentMonth - trxWibMonth);
       if (monthDiff >= 0 && monthDiff < 4) {
         monthOmzetList[monthDiff] += omzetTrx;
-        const dayOfMonth = trxTime.getDate();
+        const dayOfMonth = trxWibDate;
         let weekIdx = Math.floor((dayOfMonth - 1) / 7);
         if (weekIdx > 3) weekIdx = 3;
         monthlyMatrix[weekIdx][monthDiff] += qty;
@@ -271,10 +286,10 @@ export async function getOptibizDashboardDataAction(): Promise<OptibizDashboardD
 
     // --- 4. TAHUNAN MATRIX (Last 4 Years) ---
     if (trxTime >= startOf4YearsAgo && trxTime <= endOfToday) {
-      const yearDiff = currentYear - trxTime.getFullYear();
+      const yearDiff = currentYear - trxWibYear;
       if (yearDiff >= 0 && yearDiff < 4) {
         yearOmzetList[yearDiff] += omzetTrx;
-        const monthIdx = trxTime.getMonth();
+        const monthIdx = trxWibMonth;
         yearlyMatrix[monthIdx][yearDiff] += qty;
       }
     }

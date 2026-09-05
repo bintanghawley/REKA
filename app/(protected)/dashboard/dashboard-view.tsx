@@ -335,14 +335,14 @@ export function OptibizDashboardView({ data }: Props) {
         <div className="bg-[#ffffff] rounded-[12px] p-5 border border-[#e4e5e1] shadow-[rgba(24,25,22,0.06)_0px_1px_2px_0px] flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="font-mono text-[11px] font-medium uppercase tracking-[0.88px] text-[#8c8c89]">
-              Total Transaksi
+              Item Terjual
             </span>
             <Receipt size={16} className="text-[#8bc5f3]" />
           </div>
           <div className="mt-3">
             <div className="text-[26px] sm:text-[28px] font-semibold text-[#141415] tracking-tight">
               {transaksi.harianCount}{" "}
-              <span className="text-sm font-normal text-[#8c8c89]">Transaksi</span>
+              <span className="text-sm font-normal text-[#8c8c89]">Item</span>
             </div>
             <div className="mt-1 font-mono text-[11px] text-[#6e6f6c]">
               Hari ini di kasir

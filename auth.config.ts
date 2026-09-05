@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
+  secret: process.env.AUTH_SECRET || "reka_umkm_development_super_secret_key_32_chars",
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60,

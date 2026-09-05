@@ -26,24 +26,6 @@ export const createExpenseSchema = z.object({
     .optional(),
 });
 
-export const updateExpenseSchema = z.object({
-  id: z.string().min(1, "ID pengeluaran wajib diisi"),
-  kategori: z
-    .string()
-    .trim()
-    .min(1, "Kategori tidak boleh kosong")
-    .max(150, "Kategori maksimal 150 karakter")
-    .optional(),
-  nominal: z.coerce
-    .number({ invalid_type_error: "Nominal harus berupa angka" })
-    .min(0, "Nominal tidak boleh negatif")
-    .optional(),
-  tanggal: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")
-    .optional(),
-});
-
 export const filterExpenseSchema = z.object({
   tanggalMulai: z
     .string()
@@ -57,6 +39,5 @@ export const filterExpenseSchema = z.object({
 });
 
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
-export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
 export type FilterExpenseInput = z.infer<typeof filterExpenseSchema>;
 

@@ -2,9 +2,15 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getOptibizDashboardDataAction } from "@/lib/actions/optibiz-dashboard";
 import { getProductsAction } from "@/lib/actions/product";
 import { getExpensesAction } from "@/lib/actions/expense";
+import dynamicImport from "next/dynamic";
 import { OptibizDashboardView } from "./dashboard-view";
-import { QuickTransactionFab } from "./quick-transaction-fab";
-import { QuickExpenseModal } from "./quick-expense-modal";
+
+const QuickExpenseModal = dynamicImport(
+  () => import("./quick-expense-modal").then((m) => m.QuickExpenseModal)
+);
+const QuickTransactionFab = dynamicImport(
+  () => import("./quick-transaction-fab").then((m) => m.QuickTransactionFab)
+);
 
 export const dynamic = "force-dynamic";
 

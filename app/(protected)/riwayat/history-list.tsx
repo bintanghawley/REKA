@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { deleteTransactionAction, getTransactionsAction, getHistorySummaryAction } from "@/lib/actions/transaction";
 import { deleteExpenseAction, getExpensesAction } from "@/lib/actions/expense";
 import type { TransaksiWithProduk, PengeluaranDadakan, PeriodeSummary } from "@/types/database";
-import { formatRupiah, formatTanggalIndo } from "@/lib/utils";
+import { formatRupiah, formatTanggalIndo, getLocalDateString } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Receipt, Package, TrendingUp, TrendingDown, DollarSign, Wallet } from "lucide-react";
 
@@ -56,34 +56,26 @@ export function HistoryList({
       let startStr = "";
       
       if (newPeriode === "harian") {
-        startStr = now.toISOString().split("T")[0];
+        startStr = getLocalDateString(now);
       } else if (newPeriode === "mingguan") {
         const d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        startStr = d.toISOString().split("T")[0];
+        startStr = getLocalDateString(d);
       } else {
         const d = new Date(now.getFullYear(), now.getMonth(), 1);
-        startStr = d.toISOString().split("T")[0];
+        startStr = getLocalDateString(d);
       }
       
-      const endStr = now.toISOString().split("T")[0];
+      const endStr = getLocalDateString(now);
 
       const [sumRes, trxRes, expRes] = await Promise.all([
         getHistorySummaryAction(newPeriode),
         getTransactionsAction({ tanggalMulai: startStr, tanggalAkhir: endStr }),
-        getExpensesAction() 
+        getExpensesAction({ tanggalMulai: startStr, tanggalAkhir: endStr }) 
       ]);
 
       if (sumRes.success && sumRes.data) setSummary(sumRes.data);
       if (trxRes.success && trxRes.data) setTransactions(trxRes.data);
-      
-      if (expRes.success && expRes.data) {
-        const startDate = new Date(startStr + "T00:00:00.000Z");
-        const filteredExpenses = expRes.data.filter(e => {
-          const eDate = new Date(e.tanggal + "T00:00:00.000Z");
-          return eDate >= startDate;
-        });
-        setExpenses(filteredExpenses);
-      }
+      if (expRes.success && expRes.data) setExpenses(expRes.data);
     });
   }
 

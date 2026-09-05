@@ -523,6 +523,8 @@ export default async function HomePage() {
             <img
               src="/logo.png"
               alt="REKA"
+              loading="lazy"
+              decoding="async"
               className="h-6 w-auto object-contain"
             />
             <span className="font-mono text-[11px] text-[#8c8c89] uppercase tracking-[0.88px] border-l border-[#e4e5e1] pl-3">

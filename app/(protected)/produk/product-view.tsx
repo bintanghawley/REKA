@@ -864,6 +864,8 @@ export function ProductView({ initialProducts, userId }: Props) {
                         <img
                           src={photoUrl}
                           alt={product.nama}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                         />
                       ) : (
@@ -1197,6 +1199,8 @@ export function ProductView({ initialProducts, userId }: Props) {
                           <img
                             src={formFoto}
                             alt="Preview Produk"
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -1269,6 +1273,8 @@ export function ProductView({ initialProducts, userId }: Props) {
                             <img
                               src={preset.url}
                               alt={preset.label}
+                              loading="lazy"
+                              decoding="async"
                               className="w-full h-full object-cover"
                             />
                           </button>
