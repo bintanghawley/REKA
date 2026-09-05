@@ -13,10 +13,10 @@ import {
   AlertTriangle,
   Loader2,
   History,
-  Layers,
   Sparkles,
   Package,
   Receipt,
+  Image as ImageIcon,
 } from "lucide-react";
 import type { Produk } from "@/types/database";
 import { formatRupiah } from "@/lib/utils";
@@ -25,6 +25,7 @@ import { bulkCreateProductsAction } from "@/lib/actions/product";
 
 interface Props {
   initialProducts: Produk[];
+  userId?: string;
 }
 
 export interface CartItem {
@@ -110,13 +111,34 @@ const DEFAULT_DEMO_PRODUCTS = [
   },
 ];
 
-export function PosKasirView({ initialProducts }: Props) {
+export function PosKasirView({ initialProducts, userId }: Props) {
   const router = useRouter();
   const [products, setProducts] = useState<Produk[]>(initialProducts);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [isPending, startTransition] = useTransition();
+
+  // Storage key scoped per user ID
+  const storageKey = userId ? `reka_custom_categories_${userId}` : "reka_custom_categories";
+
+  // Persistent Custom Categories State (Private per authenticated user)
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          setCustomCategories(JSON.parse(saved));
+        } else {
+          setCustomCategories([]);
+        }
+      } catch {
+        setCustomCategories([]);
+      }
+    }
+  }, [storageKey]);
 
   // Sync state when props update
   useEffect(() => {
@@ -230,19 +252,13 @@ export function PosKasirView({ initialProducts }: Props) {
   // Categories list
   const categoryOptions = [
     "Semua",
-    "Makanan",
-    "Minuman",
-    "Snack",
-    "Cake",
     ...Array.from(
-      new Set(
-        products
-          .map((p) => p.kategori)
-          .filter(
-            (k): k is string =>
-              !!k && !["Makanan", "Minuman", "Snack", "Cake"].includes(k)
-          )
-      )
+      new Set([
+        ...products
+          .map((p) => p.kategori?.trim())
+          .filter((k): k is string => Boolean(k)),
+        ...customCategories,
+      ])
     ),
   ];
 
@@ -270,68 +286,63 @@ export function PosKasirView({ initialProducts }: Props) {
   const totalQuantityCount = cart.reduce((sum, item) => sum + item.qty, 0);
 
   return (
-    <div className="w-full space-y-6 text-slate-800 pb-16 font-sans">
-      {/* FEEDBACK TOAST NOTIFICATION */}
+    <div className="w-full space-y-6 text-[#141415] pb-16 font-sans">
+      {/* FEEDBACK TOAST NOTIFICATION (DESIGN.md: Crisp flat alert with hairline border & mono text) */}
       {feedback && (
         <div
-          className={`fixed top-5 right-5 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-xl border text-sm font-semibold transition-all ${
+          className={`fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-[4px] shadow-sm border text-xs font-mono transition-all ${
             feedback.type === "success"
-              ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-              : "bg-rose-50 border-rose-300 text-rose-800"
+              ? "bg-[#eef8f0] border-[#62b06d] text-[#165424]"
+              : "bg-[#fdeaea] border-[#f67976] text-[#be400f]"
           }`}
         >
           {feedback.type === "success" ? (
-            <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+            <CheckCircle2 size={16} className="text-[#62b06d] shrink-0" />
           ) : (
-            <AlertTriangle size={18} className="text-rose-600 shrink-0" />
+            <AlertTriangle size={16} className="text-[#f67976] shrink-0" />
           )}
           <span>{feedback.message}</span>
         </div>
       )}
 
-      {/* 1. EXECUTIVE HEADER BANNER */}
-      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-neutral-dark/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+      {/* 1. EXECUTIVE HEADER BANNER (DESIGN.md: Card White, Linen Border, Mono Eyebrow, Editorial Heading) */}
+      <div className="bg-[#ffffff] rounded-[12px] p-5 sm:p-6 border border-[#e4e5e1] shadow-[rgba(228,229,225,0.3)_0px_1px_0px_0px_inset,rgba(110,111,109,0.1)_0px_-1px_0px_0px_inset] flex flex-col md:flex-row md:items-center justify-between gap-5 relative">
         <div className="space-y-1.5 z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-              <Receipt size={20} />
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-primary-dark tracking-tight">
-              Catat Setiap Transaksi
-            </h1>
+          <div className="font-mono text-[11px] font-medium uppercase tracking-[0.88px] text-[#f35b22]">
+            [ KASIR POS // CATAT PENJUALAN ]
           </div>
-          <p className="text-sm text-neutral-dark/70 leading-relaxed max-w-xl">
+          <h1 className="text-2xl sm:text-[28px] font-semibold text-[#141415] tracking-tight leading-[1.2]">
+            Catat Setiap <span className="text-[#f35b22]">Transaksi</span>
+          </h1>
+          <p className="text-[14px] text-[#6e6f6c] leading-[1.5] max-w-xl font-normal">
             Sistem Kasir POS harian. Klik atau pilih produk dari katalog menu untuk menambahkan ke keranjang dan catat omzet serta laba secara otomatis ke database.
           </p>
         </div>
 
         {/* Right side Search Input */}
         <div className="w-full md:w-auto z-10 shrink-0">
-          <div className="relative w-full sm:w-72">
+          <div className="relative w-full sm:w-64">
             <Search
-              size={18}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-dark/40"
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8c8c89]"
             />
             <input
               type="text"
               placeholder="Cari Produk..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-neutral-bg text-primary-dark placeholder-neutral-dark/40 border border-neutral-dark/10 rounded-2xl pl-10 pr-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary transition-all"
+              className="w-full bg-[#fafaf8] text-[#141415] placeholder-[#8c8c89] border border-[#e4e5e1] rounded-[4px] pl-9 pr-3.5 py-2 text-xs sm:text-sm font-normal focus:outline-none focus:border-[#f35b22] transition-all"
             />
           </div>
         </div>
-
-        {/* Decorative ambient glow */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
       </div>
 
       {/* 2. POS MAIN WORKSPACE (LEFT: CATALOG, RIGHT: CART PANEL) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* LEFT SECTION (7 or 8 COLUMNS): CATEGORY TABS & PRODUCT CATALOG GRID */}
-        <div className="lg:col-span-7 xl:col-span-8 space-y-6">
-          {/* CATEGORY TABS */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <div className="lg:col-span-7 xl:col-span-8 space-y-5">
+          {/* CATEGORY TABS (DESIGN.md: 4px radius, crisp outline/fill) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
             {categoryOptions.map((cat) => {
               const isActive = selectedCategory === cat;
               return (
@@ -339,10 +350,10 @@ export function PosKasirView({ initialProducts }: Props) {
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 sm:px-5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap border ${
+                  className={`px-3.5 py-1.5 rounded-[4px] font-mono text-xs transition-all cursor-pointer whitespace-nowrap border ${
                     isActive
-                      ? "bg-primary text-white border-primary shadow-sm"
-                      : "bg-white text-neutral-dark/70 hover:bg-neutral-bg border-neutral-dark/10"
+                      ? "bg-[#f35b22] text-white border-[#f35b22] font-medium shadow-xs"
+                      : "bg-[#ffffff] text-[#6e6f6c] hover:bg-[#f0f0ef] hover:text-[#141415] border-[#e4e5e1]"
                   }`}
                 >
                   {cat}
@@ -353,15 +364,13 @@ export function PosKasirView({ initialProducts }: Props) {
 
           {/* PRODUCT MENU CATALOG GRID */}
           {filteredProducts.length === 0 ? (
-            <div className="bg-white rounded-3xl p-10 border border-neutral-dark/10 shadow-sm text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
-                <Package size={32} />
-              </div>
+            <div className="bg-[#ffffff] rounded-[12px] p-10 border border-[#e4e5e1] shadow-[rgba(228,229,225,0.3)_0px_1px_0px_0px_inset,rgba(110,111,109,0.1)_0px_-1px_0px_0px_inset] text-center space-y-3 font-mono">
+              <Package size={28} className="mx-auto text-[#8c8c89]" />
               <div>
-                <p className="text-base font-bold text-primary-dark">
+                <p className="text-sm font-semibold text-[#141415]">
                   Tidak ada produk ditemukan
                 </p>
-                <p className="text-xs text-neutral-dark/60 mt-1 max-w-sm mx-auto">
+                <p className="text-xs text-[#6e6f6c] mt-1 max-w-sm mx-auto font-sans">
                   {searchQuery || selectedCategory !== "Semua"
                     ? "Coba ubah kata kunci pencarian atau kategori."
                     : "Belum ada produk di database. Tambahkan produk atau isi contoh."}
@@ -373,9 +382,9 @@ export function PosKasirView({ initialProducts }: Props) {
                   type="button"
                   onClick={handleSeedDemoProducts}
                   disabled={isPending}
-                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold px-5 py-2.5 rounded-2xl text-xs shadow-md shadow-primary/20 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 bg-[#f35b22] hover:bg-[#ff5e24] text-white font-mono text-xs font-medium px-4 py-2 rounded-[4px] shadow-xs transition-all cursor-pointer"
                 >
-                  <Sparkles size={16} />
+                  <Sparkles size={14} />
                   <span>Isi Otomatis 6 Produk Contoh</span>
                 </button>
               )}
@@ -387,78 +396,79 @@ export function PosKasirView({ initialProducts }: Props) {
                 const itemQtyInCart = cartItem ? cartItem.qty : 0;
                 const isHabis = prod.status === "Habis";
 
-                const photoUrl =
-                  prod.foto ||
-                  PRESET_PHOTOS.find((p) =>
-                    prod.nama.toLowerCase().includes(p.label.toLowerCase())
-                  )?.url ||
-                  PRESET_PHOTOS[0].url;
+                const photoUrl = prod.foto;
 
                 return (
                   <div
                     key={prod.id}
                     onClick={() => addToCart(prod)}
-                    className={`bg-white rounded-3xl p-4 border transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden shadow-sm ${
+                    className={`bg-[#ffffff] rounded-[12px] p-4 border transition-all flex flex-col justify-between cursor-pointer group relative overflow-hidden shadow-[rgba(24,25,22,0.06)_0px_1px_2px_0px] ${
                       isHabis
-                        ? "opacity-60 border-neutral-dark/10"
+                        ? "opacity-60 border-[#e4e5e1]"
                         : itemQtyInCart > 0
-                        ? "border-primary ring-2 ring-primary/20 shadow-md"
-                        : "border-neutral-dark/10 hover:border-primary/40 hover:shadow-md"
+                        ? "border-[#f35b22] ring-1 ring-[#f35b22]/30 shadow-sm"
+                        : "border-[#e4e5e1] hover:border-[#f35b22]/50 hover:shadow-sm"
                     }`}
                   >
                     <div>
                       {/* Product Image */}
-                      <div className="w-full h-36 rounded-2xl overflow-hidden bg-neutral-bg mb-3 relative border border-neutral-dark/5">
-                        <img
-                          src={photoUrl}
-                          alt={prod.nama}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                      <div className="w-full h-32 rounded-[8px] overflow-hidden bg-[#f0f0ef] mb-3 relative border border-[#e4e5e1] flex items-center justify-center">
+                        {photoUrl ? (
+                          <img
+                            src={photoUrl}
+                            alt={prod.nama}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#8c8c89]">
+                            <ImageIcon size={26} />
+                          </div>
+                        )}
 
                         {/* Status Habis Badge */}
                         {isHabis && (
-                          <div className="absolute top-2.5 right-2.5 bg-rose-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-md">
+                          <div className="absolute top-2 right-2 bg-[#be400f] text-white font-mono text-[10px] font-medium px-2 py-0.5 rounded-[2px] shadow-xs">
                             HABIS
                           </div>
                         )}
 
                         {/* Quantity in Cart Badge */}
                         {itemQtyInCart > 0 && (
-                          <div className="absolute bottom-2.5 right-2.5 bg-primary text-white text-xs font-black px-2.5 py-1 rounded-full shadow-md">
+                          <div className="absolute bottom-2 right-2 bg-[#f35b22] text-white font-mono text-xs font-bold px-2 py-0.5 rounded-[2px] shadow-xs">
                             x{itemQtyInCart}
                           </div>
                         )}
                       </div>
 
                       {/* Title & Price */}
-                      <h3 className="font-extrabold text-primary-dark text-sm sm:text-base tracking-tight line-clamp-1">
+                      <h3 className="font-semibold text-[#141415] text-sm tracking-tight line-clamp-1">
                         {prod.nama}
                       </h3>
-                      <div className="flex items-center justify-between gap-2 mt-1.5">
-                        <span className="text-sm font-black text-primary">
+                      <div className="flex items-center justify-between gap-2 mt-1">
+                        <span className="font-mono text-sm font-semibold text-[#f35b22]">
                           {formatRupiah(prod.harga_jual)}
                         </span>
-                        <span className="text-[11px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-200">
+                        <span className="font-mono text-[10px] text-[#454542] bg-[#f0f0ef] px-1.5 py-0.5 rounded-[2px] border border-[#e4e5e1]">
                           {prod.kategori || "Makanan"}
                         </span>
                       </div>
                     </div>
 
                     {/* Quick Add Button */}
-                    <div className="mt-4 pt-3 border-t border-neutral-dark/10 flex items-center justify-between text-xs">
-                      <span className="text-[11px] text-neutral-dark/60 font-medium">
+                    <div className="mt-3.5 pt-2.5 border-t border-[#e4e5e1] flex items-center justify-between text-xs">
+                      <span className="font-mono text-[11px] text-[#8c8c89]">
                         HPP: {formatRupiah(prod.hpp)}
                       </span>
                       <button
                         type="button"
                         disabled={isHabis}
-                        className={`px-3 py-1 rounded-xl font-bold flex items-center gap-1 transition-all ${
+                        className={`px-2.5 py-1 rounded-[4px] font-mono text-xs font-medium flex items-center gap-1 transition-all ${
                           itemQtyInCart > 0
-                            ? "bg-primary text-white"
-                            : "bg-primary-xlight text-primary hover:bg-primary hover:text-white"
+                            ? "bg-[#f35b22] text-white"
+                            : "bg-transparent hover:bg-[#f0f0ef] border border-[#d9d9d9] text-[#141415]"
                         }`}
                       >
-                        <Plus size={14} />
+                        <Plus size={13} />
                         <span>Pilih</span>
                       </button>
                     </div>
@@ -470,15 +480,13 @@ export function PosKasirView({ initialProducts }: Props) {
         </div>
 
         {/* RIGHT SECTION (5 or 4 COLUMNS): ORDER CART / TRANSAKSI SUMMARY PANEL */}
-        <div className="lg:col-span-5 xl:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-neutral-dark/10 shadow-sm sticky top-6 space-y-5">
+        <div className="lg:col-span-5 xl:col-span-4 bg-[#ffffff] rounded-[12px] p-5 border border-[#e4e5e1] shadow-[rgba(228,229,225,0.3)_0px_1px_0px_0px_inset,rgba(110,111,109,0.1)_0px_-1px_0px_0px_inset] sticky top-6 space-y-4">
           {/* CART HEADER */}
-          <div className="flex items-center justify-between border-b border-neutral-dark/10 pb-4">
+          <div className="flex items-center justify-between border-b border-[#e4e5e1] pb-3.5">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-                <ShoppingBag size={18} />
-              </div>
-              <h2 className="text-base sm:text-lg font-bold text-primary-dark">
-                Transaksi 1
+              <Receipt size={16} className="text-[#f35b22]" />
+              <h2 className="text-base font-semibold text-[#141415] tracking-tight">
+                Transaksi Kasir
               </h2>
             </div>
 
@@ -486,26 +494,26 @@ export function PosKasirView({ initialProducts }: Props) {
               <button
                 type="button"
                 onClick={clearCart}
-                className="text-xs text-rose-600 hover:underline font-bold"
+                className="font-mono text-xs text-[#f67976] hover:underline"
               >
-                Kosongkan
+                [Kosongkan]
               </button>
             )}
           </div>
 
           {/* CART ITEMS LIST */}
           {cart.length === 0 ? (
-            <div className="text-center py-10 px-4 bg-neutral-bg/60 rounded-2xl border border-neutral-dark/10 space-y-2">
-              <ShoppingBag size={36} className="mx-auto text-neutral-dark/30" />
-              <p className="text-xs font-bold text-neutral-dark/70">
+            <div className="text-center py-10 px-4 bg-[#fafaf8] rounded-[8px] border border-[#e4e5e1] space-y-1.5 font-mono">
+              <ShoppingBag size={28} className="mx-auto text-[#8c8c89]" />
+              <p className="text-xs font-medium text-[#141415]">
                 Keranjang Masih Kosong
               </p>
-              <p className="text-[11px] text-neutral-dark/50">
+              <p className="text-[11px] text-[#6e6f6c] font-sans">
                 Klik produk di katalog kiri untuk menambahkan item ke transaksi ini.
               </p>
             </div>
           ) : (
-            <div className="space-y-3 max-h-72 overflow-y-auto pr-1 scrollbar-none divide-y divide-neutral-dark/5">
+            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1 scrollbar-none divide-y divide-[#e4e5e1]">
               {cart.map((item) => {
                 const prod = item.product;
                 const photoUrl =
@@ -518,11 +526,11 @@ export function PosKasirView({ initialProducts }: Props) {
                 return (
                   <div
                     key={prod.id}
-                    className="pt-3 first:pt-0 flex items-center justify-between gap-3"
+                    className="pt-2.5 first:pt-0 flex items-center justify-between gap-2.5 text-xs"
                   >
                     {/* Item Thumbnail & Info */}
                     <div className="flex items-center gap-2.5 overflow-hidden">
-                      <div className="w-11 h-11 rounded-xl overflow-hidden bg-neutral-bg shrink-0 border border-neutral-dark/10">
+                      <div className="w-10 h-10 rounded-[4px] overflow-hidden bg-[#f0f0ef] shrink-0 border border-[#e4e5e1]">
                         <img
                           src={photoUrl}
                           alt={prod.nama}
@@ -530,43 +538,43 @@ export function PosKasirView({ initialProducts }: Props) {
                         />
                       </div>
                       <div className="overflow-hidden">
-                        <p className="text-xs font-bold text-primary-dark truncate">
+                        <p className="text-xs font-semibold text-[#141415] truncate">
                           {prod.nama}
                         </p>
-                        <p className="text-[11px] text-primary font-extrabold">
+                        <p className="font-mono text-[11px] text-[#f35b22] font-semibold">
                           {formatRupiah(prod.harga_jual)}
                         </p>
                       </div>
                     </div>
 
                     {/* Qty Stepper Controls */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="flex items-center bg-neutral-bg rounded-xl border border-neutral-dark/10 p-0.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center bg-[#f0f0ef] rounded-[4px] border border-[#e4e5e1]">
                         <button
                           type="button"
                           onClick={() => updateQty(prod.id, item.qty - 1)}
-                          className="w-6 h-6 rounded-lg bg-white hover:bg-neutral-dark/10 text-neutral-dark flex items-center justify-center transition-all"
+                          className="w-5 h-5 flex items-center justify-center text-[#6e6f6c] hover:text-[#141415] transition-all"
                         >
-                          <Minus size={12} />
+                          <Minus size={10} />
                         </button>
-                        <span className="w-6 text-center text-xs font-extrabold text-primary-dark">
+                        <span className="w-6 text-center font-mono text-xs font-semibold text-[#141415]">
                           {item.qty}
                         </span>
                         <button
                           type="button"
                           onClick={() => updateQty(prod.id, item.qty + 1)}
-                          className="w-6 h-6 rounded-lg bg-white hover:bg-neutral-dark/10 text-neutral-dark flex items-center justify-center transition-all"
+                          className="w-5 h-5 flex items-center justify-center text-[#6e6f6c] hover:text-[#141415] transition-all"
                         >
-                          <Plus size={12} />
+                          <Plus size={10} />
                         </button>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => removeFromCart(prod.id)}
-                        className="text-rose-500 hover:text-rose-700 p-1 transition-colors"
+                        className="text-[#f67976] hover:text-[#be400f] p-1 transition-colors"
                       >
-                        <Trash2 size={15} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
@@ -576,20 +584,20 @@ export function PosKasirView({ initialProducts }: Props) {
           )}
 
           {/* FINANCIAL CALCULATION BOX */}
-          <div className="bg-neutral-bg rounded-2xl p-4 border border-neutral-dark/10 space-y-2 text-xs sm:text-sm">
-            <div className="flex items-center justify-between text-neutral-dark/70">
+          <div className="bg-[#fafaf8] rounded-[8px] p-3.5 border border-[#e4e5e1] space-y-2 font-mono text-xs">
+            <div className="flex items-center justify-between text-[#6e6f6c]">
               <span>Total Item ({totalQuantityCount})</span>
-              <span className="font-bold text-primary-dark">{cart.length} Jenis</span>
+              <span className="font-semibold text-[#141415]">{cart.length} Jenis</span>
             </div>
-            <div className="flex items-center justify-between text-neutral-dark/70">
+            <div className="flex items-center justify-between text-[#6e6f6c]">
               <span>Estimasi Laba Kotor:</span>
-              <span className="font-extrabold text-emerald-600">
+              <span className="font-semibold text-[#165424]">
                 +{formatRupiah(totalLabaKotor)}
               </span>
             </div>
-            <div className="pt-2 border-t border-neutral-dark/10 flex items-center justify-between">
-              <span className="font-bold text-primary-dark text-sm">Total Omzet:</span>
-              <span className="text-xl font-black text-primary-dark">
+            <div className="pt-2 border-t border-[#e4e5e1] flex items-center justify-between">
+              <span className="font-sans font-semibold text-[#141415] text-sm">Total Omzet:</span>
+              <span className="font-mono text-lg font-semibold text-[#141415]">
                 {formatRupiah(totalOmzet)}
               </span>
             </div>
@@ -602,12 +610,12 @@ export function PosKasirView({ initialProducts }: Props) {
               type="button"
               onClick={handleSaveTransaction}
               disabled={isPending || cart.length === 0}
-              className="w-full bg-primary hover:bg-primary-dark text-white font-extrabold py-3.5 px-4 rounded-2xl text-sm shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full bg-[#f35b22] hover:bg-[#ff5e24] text-white font-medium py-2.5 px-4 rounded-[4px] text-sm shadow-[rgba(255,255,255,0.2)_0px_1px_0px_0px_inset,rgba(24,25,22,0.06)_0px_1px_2px_0px,rgba(24,25,22,0.1)_0px_-1px_0px_0px_inset] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {isPending ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={15} className="animate-spin" />
               ) : (
-                <ShoppingBag size={16} />
+                <ShoppingBag size={15} />
               )}
               <span>Simpan Transaksi</span>
             </button>
@@ -615,9 +623,9 @@ export function PosKasirView({ initialProducts }: Props) {
             {/* Secondary Link to History */}
             <Link
               href="/riwayat"
-              className="w-full bg-neutral-bg hover:bg-neutral-bg/80 text-primary-dark font-bold py-2.5 px-4 rounded-2xl text-xs text-center border border-neutral-dark/10 transition-all flex items-center justify-center gap-1.5"
+              className="w-full bg-transparent hover:bg-[#f0f0ef] text-[#141415] font-mono text-xs font-medium py-2 px-4 rounded-[4px] text-center border border-[#d9d9d9] transition-all flex items-center justify-center gap-1.5"
             >
-              <History size={14} />
+              <History size={13} />
               <span>Lihat Riwayat</span>
             </Link>
           </div>

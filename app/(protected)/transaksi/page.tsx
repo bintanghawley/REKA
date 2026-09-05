@@ -1,3 +1,4 @@
+import { getCurrentUser } from "@/lib/auth/session";
 import { getProductsAction } from "@/lib/actions/product";
 import { PosKasirView } from "./pos-kasir-view";
 
@@ -7,8 +8,12 @@ export const metadata = {
 };
 
 export default async function TransaksiPage() {
-  const productsRes = await getProductsAction();
+  const [user, productsRes] = await Promise.all([
+    getCurrentUser(),
+    getProductsAction(),
+  ]);
+
   const products = productsRes.data || [];
 
-  return <PosKasirView initialProducts={products} />;
+  return <PosKasirView initialProducts={products} userId={user?.id} />;
 }

@@ -2,19 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 15, 23, 42;
-  --background-start-rgb: 248, 250, 252;
-  --background-end-rgb: 241, 245, 249;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #fafaf8;
+    color: #141415;
+    font-feature-settings: "calt" 0, "liga" 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
-  min-height: 100vh;
+:root {
+  /* Colors */
+  --color-cream-paper: #fafaf8;
+  --color-card-white: #ffffff;
+  --color-pebble-gray: #f0f0ef;
+  --color-linen-border: #e4e5e1;
+  --color-ash: #d9d9d9;
+  --color-ink: #141415;
+  --color-graphite: #2e2e2c;
+  --color-carbon: #454542;
+  --color-slate: #6e6f6c;
+  --color-stone: #8c8c89;
+  --color-fog: #b7b7b4;
+  --color-signal-orange: #f35b22;
+  --color-ember: #ff5e24;
+  --color-apricot: #f77c55;
+  --color-burnt-orange: #be400f;
+  --color-persimmon: #d14200;
+  --color-peach-blush: #ffcab5;
+  --color-teal-token: #88d2c3;
+  --color-sky-token: #8bc5f3;
+  --color-orchid-token: #c678dd;
+  --color-forest: #165424;
+  --color-success-green: #62b06d;
+  --color-coral-alert: #f67976;
+  --color-rose-blush: #f9aea9;
+
+  /* Typography Scale */
+  --text-eyebrow: 11px;
+  --leading-eyebrow: 1.45;
+  --tracking-eyebrow: 0.88px;
+  --text-heading-sm: 30px;
+  --leading-heading-sm: 1.17;
+  --tracking-heading-sm: -0.6px;
+  --text-heading: 36px;
+  --leading-heading: 1.15;
+  --tracking-heading: -0.72px;
+  --text-display: 48px;
+  --leading-display: 1.15;
+  --tracking-display: -2.98px;
+
+  /* Shadows */
+  --shadow-subtle: rgba(24, 25, 22, 0.06) 0px 1px 2px 0px;
+  --shadow-subtle-2: rgba(24, 25, 22, 0.02) 0px 2px 1px 0px, rgba(24, 25, 22, 0.1) 0px -1px 0px 0px inset;
+  --shadow-subtle-3: rgb(255, 255, 255) 0px 1px 0px 0px inset;
+  --shadow-subtle-4: rgba(228, 229, 225, 0.3) 0px 1px 0px 0px inset, rgba(110, 111, 109, 0.1) 0px -1px 0px 0px inset;
+  --shadow-subtle-5: rgba(255, 255, 255, 0.2) 0px 1px 0px 0px inset, rgba(24, 25, 22, 0.06) 0px 1px 2px 0px, rgba(24, 25, 22, 0.1) 0px -1px 0px 0px inset;
 }

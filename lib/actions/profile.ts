@@ -77,7 +77,7 @@ export async function updateProfileAction(
     };
 
     revalidatePath("/dashboard");
-    revalidatePath("/onboarding");
+    revalidatePath("/profil");
     return { success: true, data };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Gagal memperbarui profil usaha.";
@@ -158,7 +158,7 @@ export async function completeOnboardingAction(input: {
     };
 
     revalidatePath("/dashboard");
-    revalidatePath("/onboarding");
+    revalidatePath("/profil");
     revalidatePath("/transaksi");
 
     return {

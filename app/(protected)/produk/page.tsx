@@ -1,3 +1,4 @@
+import { getCurrentUser } from "@/lib/auth/session";
 import { getProductsAction } from "@/lib/actions/product";
 import { ProductView } from "./product-view";
 
@@ -7,8 +8,12 @@ export const metadata = {
 };
 
 export default async function ProdukPage() {
-  const productsRes = await getProductsAction();
+  const [user, productsRes] = await Promise.all([
+    getCurrentUser(),
+    getProductsAction(),
+  ]);
+
   const products = productsRes.data || [];
 
-  return <ProductView initialProducts={products} />;
+  return <ProductView initialProducts={products} userId={user?.id} />;
 }

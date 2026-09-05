@@ -34,11 +34,21 @@ export default async function RiwayatPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Riwayat & Laporan</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Pantau seluruh aktivitas transaksi dan pengeluaran usaha Anda.
-        </p>
+      {/* Header section with DESIGN.md eyebrow */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#e4e5e1] pb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="font-mono text-[11px] uppercase tracking-[0.88px] text-[#f35b22] bg-[#f35b22]/10 px-2 py-0.5 rounded-[4px] font-medium border border-[#f35b22]/20">
+              [ AUDIT // LOG AKTIVITAS ]
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#141415]">
+            Riwayat & <span className="text-[#f35b22]">Laporan</span> Usaha
+          </h1>
+          <p className="text-xs sm:text-sm text-[#6e6f6c] mt-1">
+            Pantau seluruh aktivitas transaksi penjualan dan pengeluaran operasional UMKM secara komprehensif.
+          </p>
+        </div>
       </div>
 
       <HistoryList 

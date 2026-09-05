@@ -6,7 +6,7 @@ import { deleteExpenseAction, getExpensesAction } from "@/lib/actions/expense";
 import type { TransaksiWithProduk, PengeluaranDadakan, PeriodeSummary } from "@/types/database";
 import { formatRupiah, formatTanggalIndo } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { Receipt, Package } from "lucide-react";
+import { Receipt, Package, TrendingUp, TrendingDown, DollarSign, Wallet } from "lucide-react";
 
 type Periode = "harian" | "mingguan" | "bulanan";
 
@@ -52,7 +52,6 @@ export function HistoryList({
     setPeriode(newPeriode);
 
     startTransition(async () => {
-      // Hitung tanggal mulai untuk fetch
       const now = new Date();
       let startStr = "";
       
@@ -71,12 +70,6 @@ export function HistoryList({
       const [sumRes, trxRes, expRes] = await Promise.all([
         getHistorySummaryAction(newPeriode),
         getTransactionsAction({ tanggalMulai: startStr, tanggalAkhir: endStr }),
-        // getExpensesAction currently only supports single date if passed as string.
-        // For simplicity and since expense filtering in the action wasn't updated for ranges yet,
-        // we'll fetch all expenses and filter client side for now, or just fetch without param.
-        // Wait, getExpensesAction only takes (tanggal?: string). If not passed, returns all.
-        // We'll pass undefined and filter in client if needed, or update getExpensesAction.
-        // Actually, let's just fetch all and filter in JS to avoid touching expense.ts again.
         getExpensesAction() 
       ]);
 
@@ -84,7 +77,6 @@ export function HistoryList({
       if (trxRes.success && trxRes.data) setTransactions(trxRes.data);
       
       if (expRes.success && expRes.data) {
-        // Client side filtering for expenses based on newPeriode
         const startDate = new Date(startStr + "T00:00:00.000Z");
         const filteredExpenses = expRes.data.filter(e => {
           const eDate = new Date(e.tanggal + "T00:00:00.000Z");
@@ -100,9 +92,9 @@ export function HistoryList({
     const res = await deleteTransactionAction(id);
     if (res.success) {
       setTransactions(transactions.filter((t) => t.id !== id));
-      router.refresh(); // Reload to update dashboard cards if needed
+      router.refresh();
     } else {
-      alert(res.error || "Gagal menghapus");
+      alert(res.error || "Gagal menghapus transaksi");
     }
   }
 
@@ -113,96 +105,174 @@ export function HistoryList({
       setExpenses(expenses.filter((e) => e.id !== id));
       router.refresh();
     } else {
-      alert(res.error || "Gagal menghapus");
+      alert(res.error || "Gagal menghapus pengeluaran");
     }
   }
 
-  // Gabungkan dan urutkan
+  // Gabungkan dan urutkan aktivitas
   const timeline: TimelineItem[] = [
     ...transactions.map((t) => ({ type: "transaksi" as const, data: t, timestamp: new Date(t.waktu) })),
-    ...expenses.map((e) => ({ type: "pengeluaran" as const, data: e, timestamp: new Date(e.created_at) })), // use created_at for accurate time sorting
+    ...expenses.map((e) => ({ type: "pengeluaran" as const, data: e, timestamp: new Date(e.created_at) })),
   ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   return (
     <div className="space-y-6">
       {/* Filter Tabs */}
-      <div className="flex bg-white rounded-xl border border-slate-200 p-1 w-full max-w-sm shadow-sm">
-        {(["harian", "mingguan", "bulanan"] as Periode[]).map((p) => (
-          <button
-            key={p}
-            onClick={() => handleFilter(p)}
-            disabled={isPending}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg capitalize transition-colors ${
-              periode === p
-                ? "bg-primary text-white shadow-sm"
-                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-            }`}
-          >
-            {p === "harian" ? "Hari Ini" : p === "mingguan" ? "7 Hari" : "Bulan Ini"}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="inline-flex bg-[#f0f0ef] p-1 rounded-[4px] border border-[#e4e5e1] text-xs">
+          {(["harian", "mingguan", "bulanan"] as Periode[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => handleFilter(p)}
+              disabled={isPending}
+              className={`px-4 py-1.5 text-xs rounded-[4px] capitalize transition-all cursor-pointer ${
+                periode === p
+                  ? "bg-white text-[#141415] border border-[#e4e5e1] shadow-xs font-semibold"
+                  : "text-[#6e6f6c] hover:text-[#141415] font-medium"
+              }`}
+            >
+              {p === "harian" ? "Hari Ini" : p === "mingguan" ? "7 Hari Terakhir" : "Bulan Ini"}
+            </button>
+          ))}
+        </div>
+
+        <div className="font-mono text-[11px] text-[#6e6f6c]">
+          {isPending ? "Memperbarui data..." : `Total Aktivitas: ${timeline.length}`}
+        </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm opacity-90">
-          <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Omzet</p>
-          <p className="text-xl font-bold text-slate-800 mt-1">{formatRupiah(summary.omzet)}</p>
+        {/* Omzet */}
+        <div className="bg-white p-4 sm:p-5 rounded-[12px] border border-[#e4e5e1] shadow-[rgba(228,229,225,0.3)_0px_1px_0px_0px_inset,rgba(110,111,109,0.1)_0px_-1px_0px_0px_inset]">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.88px] text-[#6e6f6c]">
+              Omzet Penjualan
+            </span>
+            <div className="w-7 h-7 rounded-[4px] bg-[#fafaf8] border border-[#e4e5e1] flex items-center justify-center text-[#141415]">
+              <DollarSign size={14} />
+            </div>
+          </div>
+          <p className="font-mono text-xl sm:text-2xl font-semibold text-[#141415] mt-3 tracking-tight">
+            {formatRupiah(summary.omzet)}
+          </p>
+          <p className="text-[11px] text-[#6e6f6c] mt-1">Total kotor pendapatan</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm opacity-90">
-          <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Laba Kotor</p>
-          <p className="text-xl font-bold text-emerald-600 mt-1">{formatRupiah(summary.laba_kotor)}</p>
+
+        {/* Laba Kotor */}
+        <div className="bg-white p-4 sm:p-5 rounded-[12px] border border-[#e4e5e1] shadow-[rgba(228,229,225,0.3)_0px_1px_0px_0px_inset,rgba(110,111,109,0.1)_0px_-1px_0px_0px_inset]">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.88px] text-[#6e6f6c]">
+              Laba Kotor
+            </span>
+            <div className="w-7 h-7 rounded-[4px] bg-[#62b06d]/10 border border-[#62b06d]/20 flex items-center justify-center text-[#165424]">
+              <TrendingUp size={14} />
+            </div>
+          </div>
+          <p className="font-mono text-xl sm:text-2xl font-semibold text-[#165424] mt-3 tracking-tight">
+            {formatRupiah(summary.laba_kotor)}
+          </p>
+          <p className="text-[11px] text-[#6e6f6c] mt-1">Omzet dikurangi HPP</p>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm opacity-90">
-          <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Pengeluaran</p>
-          <p className="text-xl font-bold text-danger mt-1">{formatRupiah(summary.total_pengeluaran)}</p>
+
+        {/* Pengeluaran */}
+        <div className="bg-white p-4 sm:p-5 rounded-[12px] border border-[#e4e5e1] shadow-[rgba(228,229,225,0.3)_0px_1px_0px_0px_inset,rgba(110,111,109,0.1)_0px_-1px_0px_0px_inset]">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.88px] text-[#6e6f6c]">
+              Pengeluaran
+            </span>
+            <div className="w-7 h-7 rounded-[4px] bg-[#f67976]/10 border border-[#f67976]/20 flex items-center justify-center text-[#f67976]">
+              <TrendingDown size={14} />
+            </div>
+          </div>
+          <p className="font-mono text-xl sm:text-2xl font-semibold text-[#f67976] mt-3 tracking-tight">
+            {formatRupiah(summary.total_pengeluaran)}
+          </p>
+          <p className="text-[11px] text-[#6e6f6c] mt-1">Biaya dadakan & operasional</p>
         </div>
-        <div className={`p-4 rounded-xl border shadow-sm ${summary.laba_bersih >= 0 ? "bg-success-light border-success/30" : "bg-danger-light border-danger/30"}`}>
-          <p className={`text-xs uppercase tracking-wider font-semibold ${summary.laba_bersih >= 0 ? "text-success" : "text-danger"}`}>Laba Bersih</p>
-          <p className={`text-xl font-bold mt-1 ${summary.laba_bersih >= 0 ? "text-success" : "text-danger"}`}>{formatRupiah(summary.laba_bersih)}</p>
+
+        {/* Laba Bersih */}
+        <div className="bg-white p-4 sm:p-5 rounded-[12px] border border-[#e4e5e1] shadow-[rgba(228,229,225,0.3)_0px_1px_0px_0px_inset,rgba(110,111,109,0.1)_0px_-1px_0px_0px_inset]">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[11px] font-medium uppercase tracking-[0.88px] text-[#6e6f6c]">
+              Laba Bersih
+            </span>
+            <div className={`w-7 h-7 rounded-[4px] flex items-center justify-center ${
+              summary.laba_bersih >= 0
+                ? "bg-[#62b06d]/10 border border-[#62b06d]/20 text-[#165424]"
+                : "bg-[#f67976]/10 border border-[#f67976]/20 text-[#f67976]"
+            }`}>
+              <Wallet size={14} />
+            </div>
+          </div>
+          <p className={`font-mono text-xl sm:text-2xl font-semibold mt-3 tracking-tight ${
+            summary.laba_bersih >= 0 ? "text-[#165424]" : "text-[#f67976]"
+          }`}>
+            {formatRupiah(summary.laba_bersih)}
+          </p>
+          <p className="text-[11px] text-[#6e6f6c] mt-1">Laba kotor dikurangi biaya</p>
         </div>
       </div>
 
       {/* Timeline List */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50">
-          <h2 className="text-sm font-semibold text-slate-800">
-            Aktivitas {timeline.length} Transaksi & Pengeluaran
-          </h2>
+      <div className="bg-white rounded-[12px] border border-[#e4e5e1] shadow-[rgba(228,229,225,0.3)_0px_1px_0px_0px_inset,rgba(110,111,109,0.1)_0px_-1px_0px_0px_inset] overflow-hidden">
+        <div className="p-4 sm:px-5 sm:py-4 border-b border-[#e4e5e1] bg-[#fafaf8] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.88px] text-[#6e6f6c]">
+              [ LOG DETAIL AKTIVITAS ]
+            </span>
+            <span className="text-[#e4e5e1]">|</span>
+            <h2 className="text-sm font-semibold text-[#141415]">
+              {timeline.length} Transaksi & Pengeluaran
+            </h2>
+          </div>
         </div>
         
         {timeline.length === 0 ? (
-          <div className="p-8 text-center text-slate-400 text-sm">
+          <div className="p-10 text-center text-[#6e6f6c] text-xs font-mono">
             Belum ada aktivitas pada periode ini.
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {timeline.map((item, idx) => {
+          <div className="divide-y divide-[#e4e5e1]">
+            {timeline.map((item) => {
               if (item.type === "transaksi") {
                 const t = item.data;
                 const laba = (t.harga_jual_saat_transaksi - t.hpp_saat_transaksi) * t.qty;
                 return (
-                  <div key={`trx-${t.id}`} className="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div
+                    key={`trx-${t.id}`}
+                    className="p-4 hover:bg-[#fafaf8] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-1">
-                        <Package size={20} />
+                      <div className="w-8 h-8 rounded-[4px] bg-[#8bc5f3]/10 text-[#0284c7] border border-[#8bc5f3]/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Package size={16} />
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-800 text-sm">
-                          Penjualan: {t.produk?.nama || "Produk dihapus"} <span className="text-slate-500 font-normal">x{t.qty}</span>
+                        <p className="font-semibold text-[#141415] text-sm">
+                          Penjualan: {t.produk?.nama || "Produk dihapus"}{" "}
+                          <span className="font-mono text-xs text-[#6e6f6c] font-normal">
+                            x{t.qty}
+                          </span>
                         </p>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="font-mono text-[11px] text-[#6e6f6c] mt-0.5">
                           {formatTanggalIndo(t.waktu.split("T")[0])} • {formatWaktuJam(t.waktu)}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/2 ml-13 sm:ml-0">
+                    <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/2 ml-11 sm:ml-0">
                       <div className="text-left sm:text-right">
-                        <p className="font-bold text-slate-800 text-sm">+{formatRupiah(t.harga_jual_saat_transaksi * t.qty)}</p>
-                        <p className="text-xs text-emerald-600 font-medium">Laba +{formatRupiah(laba)}</p>
+                        <p className="font-mono font-semibold text-[#141415] text-sm">
+                          +{formatRupiah(t.harga_jual_saat_transaksi * t.qty)}
+                        </p>
+                        <p className="font-mono text-xs text-[#165424] font-medium">
+                          Laba +{formatRupiah(laba)}
+                        </p>
                       </div>
-                      <button onClick={() => handleDeleteTransaction(t.id)} className="text-xs text-danger font-medium hover:underline">
+                      <button
+                        onClick={() => handleDeleteTransaction(t.id)}
+                        className="font-mono text-xs text-[#6e6f6c] hover:text-[#f67976] hover:bg-rose-50 border border-[#e4e5e1] hover:border-rose-200 px-2 py-1 rounded-[4px] transition-colors cursor-pointer"
+                      >
                         Hapus
                       </button>
                     </div>
@@ -211,26 +281,34 @@ export function HistoryList({
               } else {
                 const e = item.data;
                 return (
-                  <div key={`exp-${e.id}`} className="p-4 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div
+                    key={`exp-${e.id}`}
+                    className="p-4 hover:bg-[#fafaf8] transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 mt-1">
-                        <Receipt size={20} />
+                      <div className="w-8 h-8 rounded-[4px] bg-[#f67976]/10 text-[#f67976] border border-[#f67976]/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Receipt size={16} />
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-800 text-sm">
+                        <p className="font-semibold text-[#141415] text-sm">
                           Pengeluaran: {e.kategori}
                         </p>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="font-mono text-[11px] text-[#6e6f6c] mt-0.5">
                           {formatTanggalIndo(e.tanggal)}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/2 ml-13 sm:ml-0">
+                    <div className="flex items-center justify-between sm:justify-end gap-6 sm:w-1/2 ml-11 sm:ml-0">
                       <div className="text-left sm:text-right">
-                        <p className="font-bold text-danger text-sm">-{formatRupiah(e.nominal)}</p>
+                        <p className="font-mono font-semibold text-[#f67976] text-sm">
+                          -{formatRupiah(e.nominal)}
+                        </p>
                       </div>
-                      <button onClick={() => handleDeleteExpense(e.id)} className="text-xs text-danger font-medium hover:underline">
+                      <button
+                        onClick={() => handleDeleteExpense(e.id)}
+                        className="font-mono text-xs text-[#6e6f6c] hover:text-[#f67976] hover:bg-rose-50 border border-[#e4e5e1] hover:border-rose-200 px-2 py-1 rounded-[4px] transition-colors cursor-pointer"
+                      >
                         Hapus
                       </button>
                     </div>

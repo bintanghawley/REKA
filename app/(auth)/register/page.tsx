@@ -5,7 +5,6 @@ import { registerAction } from "@/lib/actions/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  BarChart3,
   Mail,
   Lock,
   Store,
@@ -71,11 +70,12 @@ export default function RegisterPage() {
 
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-neutral-dark/10 px-6 lg:px-12 py-4 flex items-center justify-between sticky top-0 z-50">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-            <BarChart3 className="text-white" size={20} />
-          </div>
-          <span className="font-bold text-xl tracking-tight text-primary-dark">REKA UMKM</span>
+        <Link href="/" className="flex items-center group">
+          <img
+            src="/logo.png"
+            alt="REKA"
+            className="h-8 sm:h-9 w-auto object-contain group-hover:scale-105 transition-transform"
+          />
         </Link>
 
         <div className="flex items-center gap-3">

@@ -6,9 +6,9 @@ import {
   LayoutDashboard,
   Receipt,
   Wallet,
-  Bot,
   History,
   Package,
+  UserRound,
 } from "lucide-react";
 
 export function SidebarNav() {
@@ -19,8 +19,8 @@ export function SidebarNav() {
     { href: "/produk", label: "Produk", icon: Package },
     { href: "/transaksi", label: "Transaksi", icon: Receipt },
     { href: "/pengeluaran", label: "Pengeluaran", icon: Wallet },
-    { href: "/onboarding", label: "Asisten AI", icon: Bot },
     { href: "/riwayat", label: "Riwayat", icon: History },
+    { href: "/profil", label: "Profil", icon: UserRound },
   ];
 
   return (
@@ -35,13 +35,13 @@ export function SidebarNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm transition-all ${
+            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-[4px] text-sm transition-all ${
               isActive
-                ? "bg-primary text-white font-bold shadow-md shadow-primary/20 hover:bg-primary-light"
-                : "text-neutral-dark hover:text-primary hover:bg-primary/5 font-medium"
+                ? "bg-[#f35b22] text-white font-medium shadow-[rgba(255,255,255,0.2)_0px_1px_0px_0px_inset,rgba(24,25,22,0.06)_0px_1px_2px_0px,rgba(24,25,22,0.1)_0px_-1px_0px_0px_inset]"
+                : "text-[#454542] hover:text-[#141415] hover:bg-[#f0f0ef] font-normal"
             }`}
           >
-            <Icon size={18} />
+            <Icon size={17} />
             <span>{item.label}</span>
           </Link>
         );
@@ -59,11 +59,11 @@ export function MobileNav() {
     { href: "/transaksi", label: "Transaksi" },
     { href: "/pengeluaran", label: "Pengeluaran" },
     { href: "/riwayat", label: "Riwayat" },
-    { href: "/onboarding", label: "Asisten AI" },
+    { href: "/profil", label: "Profil" },
   ];
 
   return (
-    <div className="md:hidden flex overflow-x-auto bg-white border-b border-neutral-dark/10 px-3 py-2 space-x-1.5 text-xs font-semibold text-neutral-dark shrink-0 sticky top-[57px] z-40 shadow-2xs scrollbar-none">
+    <div className="md:hidden flex overflow-x-auto bg-[#ffffff] border-b border-[#e4e5e1] px-3 py-2 space-x-1.5 text-xs font-medium text-[#141415] shrink-0 sticky top-[57px] z-40 shadow-xs scrollbar-none">
       {navItems.map((item) => {
         const isActive =
           pathname === item.href ||
@@ -73,10 +73,10 @@ export function MobileNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all ${
+            className={`px-3 py-1.5 rounded-[4px] whitespace-nowrap transition-all font-mono text-[11px] ${
               isActive
-                ? "bg-primary text-white font-bold shadow-2xs"
-                : "text-neutral-dark/80 hover:bg-neutral-bg hover:text-primary"
+                ? "bg-[#f35b22] text-white font-medium shadow-xs"
+                : "text-[#6e6f6c] bg-[#ffffff] border border-[#e4e5e1] hover:bg-[#f0f0ef] hover:text-[#141415]"
             }`}
           >
             {item.label}

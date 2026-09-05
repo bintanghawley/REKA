@@ -99,7 +99,7 @@ export async function createProductAction(
     revalidatePath("/produk");
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
-    revalidatePath("/onboarding");
+    revalidatePath("/profil");
     return { success: true, data };
   } catch (err: unknown) {
     const message =
@@ -158,7 +158,7 @@ export async function bulkCreateProductsAction(
     revalidatePath("/produk");
     revalidatePath("/dashboard");
     revalidatePath("/transaksi");
-    revalidatePath("/onboarding");
+    revalidatePath("/profil");
     return { success: true, data };
   } catch (err: unknown) {
     const message =
@@ -255,6 +255,78 @@ export async function deleteProductAction(
   } catch (err: unknown) {
     const message =
       err instanceof Error ? err.message : "Gagal menghapus produk.";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * 6. Mengubah nama kategori produk pada database.
+ */
+export async function renameCategoryAction(
+  oldName: string,
+  newName: string
+): Promise<ActionResult<{ updatedCount: number }>> {
+  const trimmedOld = oldName.trim();
+  const trimmedNew = newName.trim();
+  if (!trimmedOld || !trimmedNew) {
+    return { success: false, error: "Nama kategori tidak boleh kosong." };
+  }
+
+  try {
+    const user = await requireAuth();
+
+    const res = await db.produk.updateMany({
+      where: {
+        user_id: user.id,
+        kategori: trimmedOld,
+      },
+      data: {
+        kategori: trimmedNew,
+      },
+    });
+
+    revalidatePath("/produk");
+    revalidatePath("/dashboard");
+    revalidatePath("/transaksi");
+    return { success: true, data: { updatedCount: res.count } };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "Gagal mengubah nama kategori.";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * 7. Menghapus kategori produk pada database (mengalihkan produk ke kategori 'Lainnya').
+ */
+export async function deleteCategoryAction(
+  categoryName: string
+): Promise<ActionResult<{ updatedCount: number }>> {
+  const trimmed = categoryName.trim();
+  if (!trimmed) {
+    return { success: false, error: "Nama kategori tidak boleh kosong." };
+  }
+
+  try {
+    const user = await requireAuth();
+
+    const res = await db.produk.updateMany({
+      where: {
+        user_id: user.id,
+        kategori: trimmed,
+      },
+      data: {
+        kategori: "Lainnya",
+      },
+    });
+
+    revalidatePath("/produk");
+    revalidatePath("/dashboard");
+    revalidatePath("/transaksi");
+    return { success: true, data: { updatedCount: res.count } };
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : "Gagal menghapus kategori.";
     return { success: false, error: message };
   }
 }
