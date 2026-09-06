@@ -32,6 +32,17 @@ const RATE_LIMIT_BURST_PER_MINUTE = 5;
 
 const rateLimitMap = new Map<string, number[]>();
 
+let cachedAI: GoogleGenAI | null = null;
+let cachedKey: string | null = null;
+
+function getAIClient(apiKey: string): GoogleGenAI {
+  if (!cachedAI || cachedKey !== apiKey) {
+    cachedAI = new GoogleGenAI({ apiKey });
+    cachedKey = apiKey;
+  }
+  return cachedAI;
+}
+
 let lastCleanup = Date.now();
 const CLEANUP_INTERVAL = 10 * 60 * 1000;
 
@@ -133,12 +144,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = getAIClient(apiKey);
 
     const chatHistory: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [];
 
     if (Array.isArray(history)) {
-      for (const msg of history.slice(-10)) {
+      for (const msg of history.slice(-6)) {
         if (msg.role === "user" || msg.role === "model") {
           chatHistory.push({
             role: msg.role,
@@ -154,12 +165,12 @@ export async function POST(request: NextRequest) {
     });
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-3.5-flash-lite",
       contents: chatHistory,
       config: {
         systemInstruction: SYSTEM_PROMPT,
-        maxOutputTokens: 512,
-        temperature: 0.7,
+        maxOutputTokens: 350,
+        temperature: 0.6,
         topP: 0.9,
       },
     });

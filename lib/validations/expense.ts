@@ -19,7 +19,8 @@ export const createExpenseSchema = z.object({
     .max(150, "Kategori maksimal 150 karakter"),
   nominal: z.coerce
     .number({ required_error: "Nominal wajib diisi", invalid_type_error: "Nominal harus berupa angka" })
-    .min(0, "Nominal tidak boleh negatif"),
+    .min(1, "Nominal pengeluaran minimal Rp 1")
+    .max(500_000_000, "Nominal melebihi batas wajar UMKM (maksimal Rp 500.000.000)"),
   tanggal: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")

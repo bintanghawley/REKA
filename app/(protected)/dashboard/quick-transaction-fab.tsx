@@ -585,7 +585,7 @@ export function QuickTransactionFab({ products: initialProducts, userId }: Quick
       {/* Floating Action Button (FAB) on Dashboard */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center cursor-pointer group"
+        className="fixed bottom-[84px] right-4 sm:right-6 z-40 w-14 h-14 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center cursor-pointer group"
         aria-label="Catat Transaksi Kasir POS"
         title="Catat Transaksi Kasir POS"
       >

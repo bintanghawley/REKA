@@ -187,7 +187,7 @@ export function QuickExpenseModal({
       {/* Trigger Button: Floating above bottom-right */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-24 right-5 z-30 flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-primary text-primary hover:bg-primary-xlight rounded-full shadow-lg transition-all hover:scale-105 active:scale-95 text-sm font-bold cursor-pointer"
+        className="fixed bottom-[152px] right-4 sm:right-6 z-30 flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-primary text-primary hover:bg-primary-xlight rounded-full shadow-lg transition-all hover:scale-105 active:scale-95 text-sm font-bold cursor-pointer"
         aria-label="Catat Pengeluaran"
       >
         <Receipt size={17} className="text-primary shrink-0" />
