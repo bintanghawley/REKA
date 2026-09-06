@@ -7,6 +7,8 @@ export const metadata = {
   description: "Halaman Manajemen Produk & Katalog Usaha UMKM",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ProdukPage() {
   const [user, productsRes] = await Promise.all([
     getCurrentUser(),

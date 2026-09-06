@@ -5,6 +5,8 @@ import nextDynamic from "next/dynamic";
 import { LogoutButton } from "./logout-button";
 import { SidebarNav, MobileNav } from "./sidebar-nav";
 
+export const dynamic = "force-dynamic";
+
 const ChatWidget = nextDynamic(
   () => import("@/components/chat-widget").then((mod) => mod.ChatWidget)
 );

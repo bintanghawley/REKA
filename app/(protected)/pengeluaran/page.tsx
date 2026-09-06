@@ -1,6 +1,8 @@
 import { getExpensesAction } from "@/lib/actions/expense";
 import { ExpenseManager } from "./expense-manager";
 
+export const dynamic = "force-dynamic";
+
 export default async function PengeluaranPage() {
   const res = await getExpensesAction();
   const expenses = res.data || [];

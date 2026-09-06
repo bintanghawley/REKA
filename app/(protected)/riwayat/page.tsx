@@ -4,6 +4,8 @@ import { getLocalDateString } from "@/lib/utils";
 import type { PeriodeSummary } from "@/types/database";
 import { HistoryList } from "./history-list";
 
+export const dynamic = "force-dynamic";
+
 export default async function RiwayatPage() {
   const todayStr = getLocalDateString();
 

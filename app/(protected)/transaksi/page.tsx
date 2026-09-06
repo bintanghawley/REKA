@@ -7,6 +7,8 @@ export const metadata = {
   description: "Pencatatan Transaksi Penjualan Kasir POS Real-Time",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function TransaksiPage() {
   const [user, productsRes] = await Promise.all([
     getCurrentUser(),
