@@ -8,6 +8,7 @@ import {
 } from "@/lib/actions/expense";
 import type { PengeluaranDadakan } from "@/types/database";
 import { formatRupiah, formatTanggalIndo, getLocalDateString } from "@/lib/utils";
+import { ConfirmModal } from "@/components/confirm-modal";
 import {
   Receipt,
   Plus,
@@ -44,6 +45,7 @@ export function ExpenseManager({ initialExpenses }: ExpenseManagerProps) {
   const [expenses, setExpenses] = useState<PengeluaranDadakan[]>(initialExpenses);
   const [activeTab, setActiveTab] = useState<"catat" | "riwayat">("catat");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingExpense, setDeletingExpense] = useState<{ id: string; name: string } | null>(null);
 
   // Form state
   const [kategori, setKategori] = useState("");
@@ -119,14 +121,20 @@ export function ExpenseManager({ initialExpenses }: ExpenseManagerProps) {
     });
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Hapus catatan pengeluaran "${name}"?`)) return;
+  function promptDeleteExpense(id: string, name: string) {
+    setDeletingExpense({ id, name });
+  }
+
+  async function handleConfirmDeleteExpense() {
+    if (!deletingExpense) return;
+    const { id } = deletingExpense;
 
     setDeletingId(id);
     try {
       const res = await deleteExpenseAction(id);
       if (res.success) {
         setExpenses((prev) => prev.filter((item) => item.id !== id));
+        setDeletingExpense(null);
         router.refresh();
       } else {
         alert(res.error || "Gagal menghapus pengeluaran.");
@@ -483,7 +491,7 @@ export function ExpenseManager({ initialExpenses }: ExpenseManagerProps) {
 
                         <button
                           type="button"
-                          onClick={() => handleDelete(exp.id, exp.kategori)}
+                          onClick={() => promptDeleteExpense(exp.id, `${exp.kategori} (${formatRupiah(Number(exp.nominal))})`)}
                           disabled={deletingId === exp.id}
                           title="Hapus Catatan Pengeluaran"
                           className="w-8 h-8 rounded-[4px] bg-[#fafaf8] hover:bg-rose-50 text-slate-400 hover:text-rose-600 border border-[#e4e5e1] hover:border-rose-200 flex items-center justify-center transition-colors cursor-pointer disabled:opacity-50"
@@ -503,6 +511,28 @@ export function ExpenseManager({ initialExpenses }: ExpenseManagerProps) {
           )}
         </div>
       </div>
+      {/* Modal Konfirmasi Hapus Pengeluaran */}
+      <ConfirmModal
+        isOpen={!!deletingExpense}
+        onClose={() => setDeletingExpense(null)}
+        onConfirm={handleConfirmDeleteExpense}
+        title="Konfirmasi Hapus Pengeluaran"
+        description={
+          deletingExpense ? (
+            <p>
+              Apakah Anda yakin ingin menghapus catatan pengeluaran{" "}
+              <strong className="text-[#141415] font-semibold">
+                &quot;{deletingExpense.name}&quot;
+              </strong>
+              ? Data yang dihapus akan langsung mengurangi total pengeluaran dan memperbarui laba bersih.
+            </p>
+          ) : null
+        }
+        confirmLabel="Ya, Hapus"
+        cancelLabel="Batal"
+        variant="danger"
+        isLoading={!!deletingId}
+      />
     </div>
   );
 }

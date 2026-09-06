@@ -22,6 +22,7 @@ import type { Produk } from "@/types/database";
 import { formatRupiah } from "@/lib/utils";
 import { createBatchTransactionsAction } from "@/lib/actions/transaction";
 import { bulkCreateProductsAction } from "@/lib/actions/product";
+import { ConfirmModal } from "@/components/confirm-modal";
 
 interface Props {
   initialProducts: Produk[];
@@ -115,6 +116,7 @@ export function PosKasirView({ initialProducts, userId }: Props) {
   const router = useRouter();
   const [products, setProducts] = useState<Produk[]>(initialProducts);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [showClearCartConfirm, setShowClearCartConfirm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [isPending, startTransition] = useTransition();
@@ -494,8 +496,8 @@ export function PosKasirView({ initialProducts, userId }: Props) {
             {cart.length > 0 && (
               <button
                 type="button"
-                onClick={clearCart}
-                className="font-mono text-xs text-[#f67976] hover:underline"
+                onClick={() => setShowClearCartConfirm(true)}
+                className="font-mono text-xs text-[#f67976] hover:underline cursor-pointer"
               >
                 [Kosongkan]
               </button>
@@ -634,6 +636,29 @@ export function PosKasirView({ initialProducts, userId }: Props) {
           </div>
         </div>
       </div>
+      {/* MODAL KONFIRMASI KOSONGKAN KERANJANG */}
+      <ConfirmModal
+        isOpen={showClearCartConfirm}
+        onClose={() => setShowClearCartConfirm(false)}
+        onConfirm={() => {
+          clearCart();
+          setShowClearCartConfirm(false);
+          showFeedback("success", "Keranjang transaksi berhasil dikosongkan.");
+        }}
+        title="Kosongkan Keranjang?"
+        description={
+          <p>
+            Apakah Anda yakin ingin membatalkan dan mengosongkan seluruh pesanan (
+            <strong className="text-[#141415] font-semibold">
+              {cart.reduce((sum, item) => sum + item.qty, 0)} item
+            </strong>
+            ) dari keranjang kasir?
+          </p>
+        }
+        confirmLabel="Ya, Kosongkan"
+        cancelLabel="Kembali"
+        variant="danger"
+      />
     </div>
   );
 }

@@ -260,11 +260,12 @@ Margin Laba Kotor: ${grossMargin}%
 Total Pengeluaran Dicatat: Rp ${totalExpense.toLocaleString("id-ID")}
 
 Instruksi Khusus:
-Berikan output HANYA JSON murni (tanpa tanda kutip markdown backtick):
+- REKA adalah aplikasi kasir kilat UMKM menengah ke bawah TANPA manajemen stok/gudang. JANGAN pernah menyarankan kelola stok, hitung sisa stok, atau stok opname.
+- Berikan output HANYA JSON murni (tanpa tanda kutip markdown backtick):
 {
   "waktuTransaksi": {
     "title": "Tren Waktu Transaksi",
-    "desc": "penjelasan konkret 1-2 kalimat (sebutkan jam ramai dan tindakan persiapan operasional)",
+    "desc": "penjelasan konkret 1-2 kalimat (sebutkan jam ramai dan tindakan persiapan operasional cepat)",
     "badge": "Jam ${peakHourWindow}"
   },
   "omzet": {
@@ -274,12 +275,12 @@ Berikan output HANYA JSON murni (tanpa tanda kutip markdown backtick):
   },
   "produkTerlaris": {
     "title": "Produk Terlaris & Bundling",
-    "desc": "penjelasan konkret 1-2 kalimat terkait produk terlaris dan strategi bundling atau ketersediaan stok",
+    "desc": "penjelasan konkret 1-2 kalimat terkait produk terlaris dan strategi paket kombo/bundling menu hemat tanpa menyebut fitur stok",
     "badge": "Peluang Cuan"
   },
   "laba": {
     "title": "Struktur Laba & Biaya",
-    "desc": "penjelasan konkret 1-2 kalimat terkait efisiensi margin laba bersih dan pengendalian pengeluaran",
+    "desc": "penjelasan konkret 1-2 kalimat terkait efisiensi margin laba bersih dan pengendalian pengeluaran operasional di menu Pengeluaran",
     "badge": "Margin ${grossMargin}%"
   }
 }`;

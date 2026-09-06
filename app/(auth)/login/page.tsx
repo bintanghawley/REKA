@@ -82,7 +82,7 @@ export default function LoginPage() {
               Masuk ke Akun
             </h1>
             <p className="text-sm text-neutral-dark mt-2 leading-relaxed">
-              Kelola kasir, stok, dan pantau laba bersih harian usaha Anda secara instan.
+              Kelola kasir kilat, katalog produk, dan pantau laba bersih harian usaha Anda secara instan.
             </p>
           </div>
 

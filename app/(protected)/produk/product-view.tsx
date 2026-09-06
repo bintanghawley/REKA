@@ -32,6 +32,7 @@ import {
   renameCategoryAction,
   deleteCategoryAction,
 } from "@/lib/actions/product";
+import { ConfirmModal } from "@/components/confirm-modal";
 
 interface Props {
   initialProducts: Produk[];
@@ -154,6 +155,7 @@ export function ProductView({ initialProducts, userId }: Props) {
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [showAddConfirm, setShowAddConfirm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Produk | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Produk | null>(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -542,18 +544,22 @@ export function ProductView({ initialProducts, userId }: Props) {
     }
   };
 
-  // Submit Create Product
+  // Trigger Create Product Confirmation Popup
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formNama.trim()) {
       showFeedback("error", "Nama produk tidak boleh kosong");
       return;
     }
-    if (formHargaJual === "" || formHargaJual < 0) {
+    if (formHargaJual === "" || Number(formHargaJual) < 0) {
       showFeedback("error", "Harga jual harus diisi dengan angka positif");
       return;
     }
+    setShowAddConfirm(true);
+  };
 
+  // Execute Create Product after Confirmation
+  const executeCreateProduct = () => {
     startTransition(async () => {
       const res = await createProductAction({
         nama: formNama.trim(),
@@ -566,6 +572,7 @@ export function ProductView({ initialProducts, userId }: Props) {
 
       if (res.success && res.data) {
         setProducts((prev) => [res.data!, ...prev]);
+        setShowAddConfirm(false);
         setIsAddModalOpen(false);
         showFeedback("success", `Produk "${res.data.nama}" berhasil tersimpan di database!`);
         router.refresh();
@@ -706,7 +713,7 @@ export function ProductView({ initialProducts, userId }: Props) {
             Kelola Produk & <span className="text-[#f35b22]">Katalog Usaha</span>
           </h1>
           <p className="text-[14px] text-[#6e6f6c] leading-[1.5] max-w-xl font-normal">
-            Atur daftar menu, harga jual, modal HPP, dan ketersediaan stok produk Anda yang terhubung langsung dengan sistem kasir POS & database transaksi.
+            Atur daftar menu, harga jual, modal HPP, dan status ketersediaan produk Anda yang terhubung langsung dengan sistem kasir POS & database transaksi.
           </p>
         </div>
 
@@ -1367,6 +1374,35 @@ export function ProductView({ initialProducts, userId }: Props) {
           </div>
         </div>
       )}
+
+      {/* 4B. MODAL: KONFIRMASI TAMBAH PRODUK BARU */}
+      <ConfirmModal
+        isOpen={showAddConfirm}
+        onClose={() => setShowAddConfirm(false)}
+        onConfirm={executeCreateProduct}
+        title="Konfirmasi Tambah Produk"
+        description={
+          <div className="space-y-2.5">
+            <p className="text-xs text-[#6e6f6c]">
+              Apakah Anda yakin data produk ini sudah benar dan ingin menyimpannya ke database usaha?
+            </p>
+            <div className="p-3 bg-[#fafaf8] rounded-lg border border-[#e4e5e1] text-xs space-y-1.5 font-mono">
+              <div className="text-[#141415]"><span className="text-[#6e6f6c]">Nama:</span> <strong className="text-[#141415] font-semibold">{formNama}</strong></div>
+              <div className="text-[#141415]"><span className="text-[#6e6f6c]">Harga Jual:</span> <strong className="text-[#f35b22] font-semibold">{formatRupiah(Number(formHargaJual || 0))}</strong></div>
+              {Number(formHpp) > 0 && (
+                <div className="text-[#141415]"><span className="text-[#6e6f6c]">Modal HPP:</span> {formatRupiah(Number(formHpp))}</div>
+              )}
+              {formKategori && (
+                <div className="text-[#141415]"><span className="text-[#6e6f6c]">Kategori:</span> {formKategori}</div>
+              )}
+            </div>
+          </div>
+        }
+        confirmLabel="Ya, Simpan Produk"
+        cancelLabel="Periksa Kembali"
+        variant="primary"
+        isLoading={isPending}
+      />
 
       {/* 5. MODAL: LIVE CAMERA VIEWFINDER */}
       {isCameraOpen && (
