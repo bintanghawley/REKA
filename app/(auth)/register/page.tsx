@@ -256,7 +256,7 @@ export default function RegisterPage() {
 
       {/* Footer */}
       <footer className="py-4 text-center text-xs text-neutral-dark/60 border-t border-neutral-dark/5 bg-white/50">
-        &copy; {new Date().getFullYear()} REKA UMKM — Solusi Pencatatan Usaha Berkelanjutan (SDG 8)
+        &copy; {new Date().getFullYear()} REKA UMKM — Aplikasi Kasir Kilat &amp; Manajemen Laba Rugi
       </footer>
     </div>
   );

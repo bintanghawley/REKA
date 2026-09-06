@@ -13,7 +13,7 @@ export default middleware((req) => {
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "?"));
 
   // API dan static files di-bypass via config matcher, tapi jika lolos:
-  if (pathname.startsWith("/api/auth")) {
+  if (pathname.startsWith("/api/auth") || pathname.startsWith("/api/chat")) {
     return NextResponse.next();
   }
 

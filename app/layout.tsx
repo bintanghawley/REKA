@@ -16,7 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "REKA UMKM — Catat Penjualan & Laba Bersih Warung",
-  description: "Aplikasi kasir kilat dan manajemen laba rugi UMKM. Solusi SDG 8 ITechnoCup 2026.",
+  description: "Aplikasi kasir kilat dan manajemen laba rugi UMKM untuk pencatatan transaksi dan pembukuan praktis warung.",
   icons: {
     icon: "/logo.png",
   },

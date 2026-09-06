@@ -1,10 +1,16 @@
 import { getCurrentUser, getCurrentProfile } from "@/lib/auth/session";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import nextDynamic from "next/dynamic";
 import { LogoutButton } from "./logout-button";
 import { SidebarNav, MobileNav } from "./sidebar-nav";
 
+const ChatWidget = nextDynamic(
+  () => import("@/components/chat-widget").then((mod) => mod.ChatWidget)
+);
+
 export const dynamic = "force-dynamic";
+
 
 export default async function ProtectedLayout({
   children,
@@ -86,6 +92,8 @@ export default async function ProtectedLayout({
       <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-[1200px] w-full mx-auto relative overflow-x-hidden">
         <div className="relative z-10">{children}</div>
       </main>
+
+      <ChatWidget />
     </div>
   );
 }

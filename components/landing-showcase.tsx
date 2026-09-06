@@ -118,7 +118,7 @@ export function LandingHeader() {
             />
           </Link>
           <span className="hidden sm:inline-block font-mono text-[11px] font-medium tracking-[0.88px] text-[#6e6f6c] uppercase border-l border-[#e4e5e1] pl-3">
-            UMKM // SDG 8
+            SISTEM KASIR UMKM
           </span>
         </div>
 
