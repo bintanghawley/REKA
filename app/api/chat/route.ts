@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/prisma";
 
 const SYSTEM_PROMPT = `Kamu adalah REKA Assistant, asisten virtual untuk aplikasi kasir REKA UMKM.
 
@@ -146,6 +147,24 @@ export async function POST(request: NextRequest) {
 
     const ai = getAIClient(apiKey);
 
+    let userContext = "";
+    try {
+      const profile = await db.profile.findUnique({
+        where: { id: userId },
+        select: { nama_usaha: true, jenis_usaha: true },
+      });
+      if (profile?.nama_usaha || profile?.jenis_usaha) {
+        userContext = `\n\nKonteks Pengguna Saat Ini:
+- Nama Usaha: ${profile.nama_usaha || "Belum diatur"}
+- Jenis/Bidang Usaha: ${profile.jenis_usaha || "UMKM"}
+Instruksi personalisasi:
+- Sapa atau kaitkan jawaban secara alami dengan nama usaha "${profile.nama_usaha || "usaha Anda"}" dan bidang usaha "${profile.jenis_usaha || "UMKM"}" jika relevan.
+- Berikan contoh nyata atau strategi yang cocok untuk jenis usaha tersebut.`;
+      }
+    } catch (dbErr) {
+      console.warn("[REKA Chat] Failed to fetch profile context:", dbErr);
+    }
+
     const chatHistory: Array<{ role: "user" | "model"; parts: Array<{ text: string }> }> = [];
 
     if (Array.isArray(history)) {
@@ -168,7 +187,7 @@ export async function POST(request: NextRequest) {
       model: "gemini-3.5-flash-lite",
       contents: chatHistory,
       config: {
-        systemInstruction: SYSTEM_PROMPT,
+        systemInstruction: SYSTEM_PROMPT + userContext,
         maxOutputTokens: 350,
         temperature: 0.6,
         topP: 0.9,

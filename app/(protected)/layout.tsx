@@ -9,9 +9,6 @@ const ChatWidget = nextDynamic(
   () => import("@/components/chat-widget").then((mod) => mod.ChatWidget)
 );
 
-export const dynamic = "force-dynamic";
-
-
 export default async function ProtectedLayout({
   children,
 }: {

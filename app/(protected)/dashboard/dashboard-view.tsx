@@ -32,10 +32,13 @@ import {
   AreaChart,
 } from "recharts";
 import type { OptibizDashboardData } from "@/lib/actions/optibiz-dashboard";
+import type { AiBusinessInsightResult } from "@/lib/actions/ai-insight";
+import { AiInsightCard } from "@/components/ai-insight-card";
 import { formatRupiah } from "@/lib/utils";
 
 interface Props {
   data: OptibizDashboardData;
+  aiInsight?: AiBusinessInsightResult;
 }
 
 export type FilterPeriod = "harian" | "mingguan" | "bulanan" | "tahunan";
@@ -80,7 +83,7 @@ function PeriodSelector({
   );
 }
 
-export function OptibizDashboardView({ data }: Props) {
+export function OptibizDashboardView({ data, aiInsight }: Props) {
   const { welcome, omzet, transaksi, laba, topProducts } = data;
 
   // PERIOD SELECTOR STATES
@@ -368,6 +371,11 @@ export function OptibizDashboardView({ data }: Props) {
           </div>
         </div>
       </div>
+
+      {/* AI Smart Business Insights */}
+      {aiInsight && (
+        <AiInsightCard initialData={aiInsight} />
+      )}
 
       {/* 3. ROW 2: DUAL ANALYTICS WITH PERIOD SELECTORS (DESIGN.md: Editorial header, crisp charts, mono indicators) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">

@@ -2,6 +2,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { getOptibizDashboardDataAction } from "@/lib/actions/optibiz-dashboard";
 import { getProductsAction } from "@/lib/actions/product";
 import { getExpensesAction } from "@/lib/actions/expense";
+import { getAiBusinessInsightsAction } from "@/lib/actions/ai-insight";
 import dynamicImport from "next/dynamic";
 import { OptibizDashboardView } from "./dashboard-view";
 
@@ -15,11 +16,12 @@ const QuickTransactionFab = dynamicImport(
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [dashboardData, productsRes, user, expensesRes] = await Promise.all([
+  const [dashboardData, productsRes, user, expensesRes, aiInsightRes] = await Promise.all([
     getOptibizDashboardDataAction(),
     getProductsAction(),
     getCurrentUser(),
     getExpensesAction(),
+    getAiBusinessInsightsAction(),
   ]);
 
   const products = productsRes.data || [];
@@ -27,7 +29,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <OptibizDashboardView data={dashboardData} />
+      <OptibizDashboardView data={dashboardData} aiInsight={aiInsightRes} />
 
       {/* Floating Action Modals for Quick Expenses & POS Cashier */}
       <QuickExpenseModal initialExpenses={initialExpenses} />

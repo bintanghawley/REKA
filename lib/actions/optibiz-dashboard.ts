@@ -135,30 +135,30 @@ export async function getOptibizDashboardDataAction(): Promise<OptibizDashboardD
   const diffTime = Math.abs(Date.now() - profileCreatedAt.getTime());
   const daysCount = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-  // Query transaksi yang diperlukan (hanya select field esensial untuk menghemat RAM)
-  const allTrx = await db.transaksi.findMany({
-    where: {
-      user_id: user.id,
-      waktu: { gte: startOf4YearsAgo, lte: endOfToday },
-    },
-    select: {
-      qty: true,
-      harga_jual_saat_transaksi: true,
-      hpp_saat_transaksi: true,
-      waktu: true,
-      produk: { select: { nama: true } },
-    },
-    orderBy: { waktu: "asc" },
-  });
-
-  // Query pengeluaran user
-  const allExpenses = await db.pengeluaranDadakan.findMany({
-    where: {
-      user_id: user.id,
-      tanggal: { gte: startOf4YearsAgo, lte: endOfToday },
-    },
-    select: { nominal: true, tanggal: true },
-  });
+  // Query transaksi & pengeluaran secara paralel untuk memangkas latency database
+  const [allTrx, allExpenses] = await Promise.all([
+    db.transaksi.findMany({
+      where: {
+        user_id: user.id,
+        waktu: { gte: startOf4YearsAgo, lte: endOfToday },
+      },
+      select: {
+        qty: true,
+        harga_jual_saat_transaksi: true,
+        hpp_saat_transaksi: true,
+        waktu: true,
+        produk: { select: { nama: true } },
+      },
+      orderBy: { waktu: "asc" },
+    }),
+    db.pengeluaranDadakan.findMany({
+      where: {
+        user_id: user.id,
+        tanggal: { gte: startOf4YearsAgo, lte: endOfToday },
+      },
+      select: { nominal: true, tanggal: true },
+    }),
+  ]);
 
   // --- 1. HARIAN (TODAY) STATS ---
   let todayOmzet = 0;

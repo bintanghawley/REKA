@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { auth } from "@/auth";
 import { db } from "@/lib/prisma";
 import type { Profile } from "@/types/database";
@@ -13,10 +14,11 @@ export type SessionUser = {
 /**
  * Mengambil authenticated user dari session JWT saat ini.
  * Membaca session dari Auth.js (httpOnly cookie).
+ * Diduplikasi/dimemoisasi per request menggunakan React cache().
  *
  * @returns SessionUser jika user sedang login, null jika tidak.
  */
-export async function getCurrentUser(): Promise<SessionUser | null> {
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   try {
     const session = await auth();
 
@@ -31,15 +33,16 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   } catch {
     return null;
   }
-}
+});
 
 /**
  * Mengambil profil usaha milik authenticated user yang sedang login.
  * Query ke tabel `profiles` via Prisma menggunakan user.id dari session.
+ * Diduplikasi/dimemoisasi per request menggunakan React cache().
  *
  * @returns Profile jika ditemukan, null jika tidak ada session atau profil.
  */
-export async function getCurrentProfile(): Promise<Profile | null> {
+export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   try {
     const user = await getCurrentUser();
     if (!user) return null;
@@ -61,7 +64,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   } catch {
     return null;
   }
-}
+});
 
 /**
  * Memastikan user terautentikasi sebelum mengeksekusi operasi server.

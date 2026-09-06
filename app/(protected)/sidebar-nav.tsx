@@ -35,6 +35,7 @@ export function SidebarNav() {
           <Link
             key={item.href}
             href={item.href}
+            prefetch={true}
             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-[4px] text-sm transition-all ${
               isActive
                 ? "bg-[#f35b22] text-white font-medium shadow-[rgba(255,255,255,0.2)_0px_1px_0px_0px_inset,rgba(24,25,22,0.06)_0px_1px_2px_0px,rgba(24,25,22,0.1)_0px_-1px_0px_0px_inset]"
@@ -73,6 +74,7 @@ export function MobileNav() {
           <Link
             key={item.href}
             href={item.href}
+            prefetch={true}
             className={`px-3 py-1.5 rounded-[4px] whitespace-nowrap transition-all font-mono text-[11px] ${
               isActive
                 ? "bg-[#f35b22] text-white font-medium shadow-xs"
