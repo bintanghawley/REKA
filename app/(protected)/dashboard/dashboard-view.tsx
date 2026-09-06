@@ -33,7 +33,7 @@ import {
 } from "recharts";
 import type { OptibizDashboardData } from "@/lib/actions/optibiz-dashboard";
 import type { AiBusinessInsightResult } from "@/lib/actions/ai-insight";
-import { AiInsightCard } from "@/components/ai-insight-card";
+import { FeatureAiInsight, AiInsightStatusBar } from "@/components/ai-insight-card";
 import { formatRupiah } from "@/lib/utils";
 
 interface Props {
@@ -83,8 +83,9 @@ function PeriodSelector({
   );
 }
 
-export function OptibizDashboardView({ data, aiInsight }: Props) {
+export function OptibizDashboardView({ data, aiInsight: initialAiInsight }: Props) {
   const { welcome, omzet, transaksi, laba, topProducts } = data;
+  const [aiInsight, setAiInsight] = useState<AiBusinessInsightResult | undefined>(initialAiInsight);
 
   // PERIOD SELECTOR STATES
   // 1. Tren Transaksi Harian -> Default: "mingguan"
@@ -372,9 +373,12 @@ export function OptibizDashboardView({ data, aiInsight }: Props) {
         </div>
       </div>
 
-      {/* AI Smart Business Insights */}
+      {/* AI Smart Insight Status Bar */}
       {aiInsight && (
-        <AiInsightCard initialData={aiInsight} />
+        <AiInsightStatusBar
+          data={aiInsight}
+          onRefresh={(updated) => setAiInsight(updated)}
+        />
       )}
 
       {/* 3. ROW 2: DUAL ANALYTICS WITH PERIOD SELECTORS (DESIGN.md: Editorial header, crisp charts, mono indicators) */}
@@ -498,6 +502,12 @@ export function OptibizDashboardView({ data, aiInsight }: Props) {
               Filter: {trendPeriod}
             </span>
           </div>
+
+          {/* AI Insight: Waktu Transaksi */}
+          <FeatureAiInsight
+            insight={aiInsight?.insights.waktuTransaksi}
+            featureName="Waktu Transaksi"
+          />
         </div>
 
         {/* Right (5 Columns): Porsi Omzet with Period Selector */}
@@ -574,6 +584,12 @@ export function OptibizDashboardView({ data, aiInsight }: Props) {
               </div>
             </div>
           </div>
+
+          {/* AI Insight: Omzet */}
+          <FeatureAiInsight
+            insight={aiInsight?.insights.omzet}
+            featureName="Omzet"
+          />
 
           <div className="pt-4 border-t border-[#e4e5e1]">
             <Link
@@ -657,6 +673,12 @@ export function OptibizDashboardView({ data, aiInsight }: Props) {
               )}
             </div>
           </div>
+
+          {/* AI Insight: Produk Terlaris */}
+          <FeatureAiInsight
+            insight={aiInsight?.insights.produkTerlaris}
+            featureName="Produk Terlaris"
+          />
 
           <div className="mt-5 pt-3.5 border-t border-[#e4e5e1]">
             <Link
@@ -744,6 +766,12 @@ export function OptibizDashboardView({ data, aiInsight }: Props) {
               </div>
             </div>
           </div>
+
+          {/* AI Insight: Laba & Margin */}
+          <FeatureAiInsight
+            insight={aiInsight?.insights.laba}
+            featureName="Laba & Margin"
+          />
 
           <div className="mt-5 pt-3.5 border-t border-[#e4e5e1]">
             <Link

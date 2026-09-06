@@ -17,9 +17,14 @@ export type AiBusinessInsightResult = {
   businessType: string;
   updatedAt: string;
   insights: {
-    peakHour: InsightCardData;
-    productStrategy: InsightCardData;
-    marginTip: InsightCardData;
+    waktuTransaksi: InsightCardData;
+    omzet: InsightCardData;
+    produkTerlaris: InsightCardData;
+    laba: InsightCardData;
+    // Backward compatibility
+    peakHour?: InsightCardData;
+    productStrategy?: InsightCardData;
+    marginTip?: InsightCardData;
   };
   error?: string;
 };
@@ -40,6 +45,7 @@ const CACHE_TTL_MS = 15 * 60 * 1000; // 15 menit cache in-memory
 
 /**
  * Server Action: Menghasilkan AI Smart Business Insight berbasis data transaksi riil.
+ * Menghasilkan 4 pilar insight per fitur (Waktu Transaksi, Omzet, Produk Terlaris, Laba & Margin).
  * Dilengkapi in-memory caching 15 menit per user agar navigasi dashboard instan (0ms).
  */
 export async function getAiBusinessInsightsAction(
@@ -100,14 +106,35 @@ export async function getAiBusinessInsightsAction(
         businessType,
         updatedAt: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
         insights: {
+          waktuTransaksi: {
+            title: "Pola Jam Ramai",
+            desc: "Belum ada transaksi — Catat transaksi di Kasir POS hari ini untuk mengetahui jam belanja pembeli.",
+            badge: "Menunggu Data",
+          },
+          omzet: {
+            title: "Pola Distribusi Omzet",
+            desc: "Porsi omzet harian dan mingguan akan otomatis dianalisis begitu transaksi mulai dicatat.",
+            badge: "Menunggu Data",
+          },
+          produkTerlaris: {
+            title: "Katalog & Menu Andalan",
+            desc: "Daftarkan menu unggulan di menu Produk dengan modal HPP agar sistem menganalisis produk paling laris.",
+            badge: "Mulai Sekarang",
+          },
+          laba: {
+            title: "Kunci Untung Bersih",
+            desc: "Catat pengeluaran kecil seperti es batu, gas, atau kemasan di menu Pengeluaran agar uang di laci kasir selalu cocok.",
+            badge: "Tips Keuangan",
+          },
+          // Alias
           peakHour: {
             title: "Pola Jam Ramai",
-            desc: "Belum terdeteksi — Mulai catat transaksi penjualan hari ini di Kasir POS untuk mengetahui jam belanja pembeli.",
+            desc: "Belum ada transaksi — Catat transaksi di Kasir POS hari ini untuk mengetahui jam belanja pembeli.",
             badge: "Menunggu Data",
           },
           productStrategy: {
             title: "Katalog & Menu Andalan",
-            desc: "Daftarkan menu unggulan di menu Produk dengan modal HPP agar sistem otomatis menghitung keuntungan murni.",
+            desc: "Daftarkan menu unggulan di menu Produk dengan modal HPP agar sistem menganalisis produk paling laris.",
             badge: "Mulai Sekarang",
           },
           marginTip: {
@@ -168,26 +195,47 @@ export async function getAiBusinessInsightsAction(
     const totalExpense = expenses.reduce((acc, curr) => acc + Number(curr.nominal), 0);
     const grossMargin = totalOmzet > 0 ? Math.round(((totalOmzet - totalHpp) / totalOmzet) * 100) : 0;
 
-    // Fallback heurisitik deterministik (selalu siap jika AI offline)
+    // Fallback heurisitik deterministik per fitur (selalu siap jika AI offline)
     const fallbackInsights = {
-      peakHour: {
+      waktuTransaksi: {
         title: "Tren Jam Sibuk",
         desc: `Aktivitas pembeli tertinggi tercatat pada ${peakHourWindow} (${maxTrxInHour} item terjual). Siapkan porsi dan bahan baku sebelum jam ini agar kasir tidak kewalahan.`,
         badge: peakHourWindow,
       },
+      omzet: {
+        title: "Pola & Distribusi Omzet",
+        desc: `Total omzet 7 hari mencapai Rp ${totalOmzet.toLocaleString("id-ID")}. Pertahankan ritme penjualan harian dan pertimbangkan promo di hari sepi untuk mendongkrak omzet.`,
+        badge: "Pola Pendapatan",
+      },
+      produkTerlaris: {
+        title: "Menu Terlaris & Bundling",
+        desc: `${topProdName} menjadi pilihan favorit pelanggan (${topProdQty} terjual). Buat paket kombo hemat dengan produk lain untuk meningkatkan nominal per transaksi.`,
+        badge: `${topProdName} (#1)`,
+      },
+      laba: {
+        title: "Kesehatan Margin & Biaya",
+        desc: `Margin laba kotor toko berada di kisaran ${grossMargin}%. Pantau pos pengeluaran operasional agar uang bersih yang siap diambil tetap stabil dan bertumbuh.`,
+        badge: `Margin ${grossMargin}%`,
+      },
+      // Backward compatibility aliases
+      peakHour: {
+        title: "Tren Jam Sibuk",
+        desc: `Aktivitas pembeli tertinggi tercatat pada ${peakHourWindow} (${maxTrxInHour} item terjual). Siapkan porsi dan bahan baku sebelum jam ini.`,
+        badge: peakHourWindow,
+      },
       productStrategy: {
         title: "Menu Terlaris & Bundling",
-        desc: `${topProdName} menjadi pilihan favorit pelanggan (${topProdQty} terjual). Coba buat paket kombo hemat dengan minuman untuk meningkatkan nominal rata-rata per transaksi.`,
+        desc: `${topProdName} menjadi pilihan favorit pelanggan (${topProdQty} terjual). Coba buat paket kombo hemat.`,
         badge: `${topProdName} (#1)`,
       },
       marginTip: {
         title: "Kesehatan Margin & Biaya",
-        desc: `Margin laba kotor toko Anda berada di kisaran ${grossMargin}%. Pantau pos pengeluaran operasional agar laba bersih yang siap diambil tetap stabil.`,
+        desc: `Margin laba kotor toko berada di kisaran ${grossMargin}%. Pantau pos pengeluaran operasional.`,
         badge: `Margin ${grossMargin}%`,
       },
     };
 
-    // 3. Coba panggil Gemini untuk menghasilkan insight yang lebih personal & kontekstual
+    // 3. Coba panggil Gemini untuk menghasilkan insight yang lebih personal & kontekstual per fitur
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey.includes("ganti_dengan")) {
       return {
@@ -202,32 +250,37 @@ export async function getAiBusinessInsightsAction(
 
     try {
       const ai = getAIClient(apiKey);
-      const prompt = `Analisis data penjualan toko berikut dan berikan 3 rekomendasi taktis singkat dalam format JSON:
+      const prompt = `Analisis data penjualan toko berikut dan berikan 4 rekomendasi taktis singkat untuk 4 fitur visualisasi (Waktu Transaksi, Omzet, Produk Terlaris, Laba) dalam format JSON murni:
 Nama Toko: ${businessName}
 Bidang Usaha: ${businessType}
-Total Transaksi 7 Hari: ${transactions.length} transaksi (${totalOmzet} rupiah)
-Jam Teramai: Sekitar jam ${peakHourWindow} (${maxTrxInHour} item)
+Total Transaksi 7 Hari: ${transactions.length} transaksi (Total Rp ${totalOmzet.toLocaleString("id-ID")})
+Jam Teramai: Sekitar jam ${peakHourWindow} (${maxTrxInHour} item terjual)
 Produk Terlaris: ${sortedProducts.map(([n, d]) => `${n} (${d.qty}x)`).join(", ")}
 Margin Laba Kotor: ${grossMargin}%
 Total Pengeluaran Dicatat: Rp ${totalExpense.toLocaleString("id-ID")}
 
-Instruksi:
+Instruksi Khusus:
 Berikan output HANYA JSON murni (tanpa tanda kutip markdown backtick):
 {
-  "peakHour": {
-    "title": "Tren Jam Ramai",
-    "desc": "penjelasan konkret 1-2 kalimat (sebutkan jam dan tindakan persiapan)",
+  "waktuTransaksi": {
+    "title": "Tren Waktu Transaksi",
+    "desc": "penjelasan konkret 1-2 kalimat (sebutkan jam ramai dan tindakan persiapan operasional)",
     "badge": "Jam ${peakHourWindow}"
   },
-  "productStrategy": {
-    "title": "Menu & Manajemen Stok",
-    "desc": "penjelasan konkret 1-2 kalimat terkait produk terlaris dan strategi bundling",
+  "omzet": {
+    "title": "Tren & Distribusi Omzet",
+    "desc": "penjelasan konkret 1-2 kalimat terkait stabilitas pendapatan atau rekomendasi kenaikan omzet",
+    "badge": "Pola Omzet"
+  },
+  "produkTerlaris": {
+    "title": "Produk Terlaris & Bundling",
+    "desc": "penjelasan konkret 1-2 kalimat terkait produk terlaris dan strategi bundling atau ketersediaan stok",
     "badge": "Peluang Cuan"
   },
-  "marginTip": {
-    "title": "Optimasi Laba & Operasional",
-    "desc": "penjelasan konkret 1-2 kalimat terkait efisiensi biaya dan margin",
-    "badge": "Tips Finansial"
+  "laba": {
+    "title": "Struktur Laba & Biaya",
+    "desc": "penjelasan konkret 1-2 kalimat terkait efisiensi margin laba bersih dan pengendalian pengeluaran",
+    "badge": "Margin ${grossMargin}%"
   }
 }`;
 
@@ -236,7 +289,7 @@ Berikan output HANYA JSON murni (tanpa tanda kutip markdown backtick):
         contents: prompt,
         config: {
           temperature: 0.5,
-          maxOutputTokens: 400,
+          maxOutputTokens: 500,
         },
       });
 
@@ -244,7 +297,16 @@ Berikan output HANYA JSON murni (tanpa tanda kutip markdown backtick):
       const jsonCleaned = responseText.replace(/```json/gi, "").replace(/```/g, "").trim();
       const parsed = JSON.parse(jsonCleaned);
 
-      if (parsed.peakHour?.desc && parsed.productStrategy?.desc && parsed.marginTip?.desc) {
+      if (parsed.waktuTransaksi?.desc || parsed.peakHour?.desc) {
+        const wt = parsed.waktuTransaksi || parsed.peakHour;
+        const pt = parsed.produkTerlaris || parsed.productStrategy;
+        const lb = parsed.laba || parsed.marginTip;
+        const om = parsed.omzet || {
+          title: "Tren & Distribusi Omzet",
+          desc: `Total omzet mencapai Rp ${totalOmzet.toLocaleString("id-ID")}. Pertahankan konsistensi harian dan dorong penjualan pada hari-hari sepi.`,
+          badge: "Pola Omzet",
+        };
+
         const aiResult: AiBusinessInsightResult = {
           success: true,
           hasData: true,
@@ -252,21 +314,30 @@ Berikan output HANYA JSON murni (tanpa tanda kutip markdown backtick):
           businessType,
           updatedAt: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
           insights: {
-            peakHour: {
-              title: parsed.peakHour.title || "Tren Jam Ramai",
-              desc: parsed.peakHour.desc,
-              badge: parsed.peakHour.badge || peakHourWindow,
+            waktuTransaksi: {
+              title: wt.title || "Tren Waktu Transaksi",
+              desc: wt.desc,
+              badge: wt.badge || peakHourWindow,
             },
-            productStrategy: {
-              title: parsed.productStrategy.title || "Menu & Manajemen Stok",
-              desc: parsed.productStrategy.desc,
-              badge: parsed.productStrategy.badge || "Peluang Cuan",
+            omzet: {
+              title: om.title || "Tren & Distribusi Omzet",
+              desc: om.desc,
+              badge: om.badge || "Pola Omzet",
             },
-            marginTip: {
-              title: parsed.marginTip.title || "Optimasi Laba & Biaya",
-              desc: parsed.marginTip.desc,
-              badge: parsed.marginTip.badge || `Margin ${grossMargin}%`,
+            produkTerlaris: {
+              title: pt.title || "Produk Terlaris & Bundling",
+              desc: pt.desc,
+              badge: pt.badge || "Peluang Cuan",
             },
+            laba: {
+              title: lb.title || "Struktur Laba & Biaya",
+              desc: lb.desc,
+              badge: lb.badge || `Margin ${grossMargin}%`,
+            },
+            // Aliases
+            peakHour: wt,
+            productStrategy: pt,
+            marginTip: lb,
           },
         };
         insightCache.set(user.id, { data: aiResult, timestamp: Date.now() });
@@ -296,9 +367,10 @@ Berikan output HANYA JSON murni (tanpa tanda kutip markdown backtick):
       businessType: "UMKM",
       updatedAt: "-",
       insights: {
-        peakHour: { title: "Puncak Keramaian", desc: "Data belum cukup untuk dianalisis.", badge: "-" },
-        productStrategy: { title: "Strategi Produk", desc: "Data belum cukup untuk dianalisis.", badge: "-" },
-        marginTip: { title: "Tips Finansial", desc: "Data belum cukup untuk dianalisis.", badge: "-" },
+        waktuTransaksi: { title: "Waktu Transaksi", desc: "Data belum cukup untuk dianalisis.", badge: "-" },
+        omzet: { title: "Omzet", desc: "Data belum cukup untuk dianalisis.", badge: "-" },
+        produkTerlaris: { title: "Produk Terlaris", desc: "Data belum cukup untuk dianalisis.", badge: "-" },
+        laba: { title: "Laba & Margin", desc: "Data belum cukup untuk dianalisis.", badge: "-" },
       },
       error: "Gagal memuat analisis AI.",
     };
