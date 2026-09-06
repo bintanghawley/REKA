@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Sparkles, RefreshCw } from "lucide-react";
+import { FormattedMarkdown } from "@/components/formatted-markdown";
 import {
   getAiBusinessInsightsAction,
   type AiBusinessInsightResult,
@@ -45,9 +46,11 @@ export function FeatureAiInsight({
             </span>
           )}
         </div>
-        <p className="text-[11px] sm:text-xs text-[#e4e5e1] leading-relaxed font-sans">
-          {insight.desc}
-        </p>
+        <FormattedMarkdown
+          content={insight.desc}
+          variant="dark"
+          className="text-[11px] sm:text-xs text-[#e4e5e1] leading-relaxed font-sans"
+        />
       </div>
     </div>
   );

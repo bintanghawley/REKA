@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, X, Send, Bot, Sparkles } from "lucide-react";
+import { FormattedMarkdown } from "@/components/formatted-markdown";
 
 interface ChatMessage {
   id: string;
@@ -198,7 +199,10 @@ export function ChatWidget() {
                       : { boxShadow: "rgba(228,229,225,0.3) 0px 1px 0px 0px inset, rgba(110,111,109,0.1) 0px -1px 0px 0px inset" }
                   }
                 >
-                  <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                  <FormattedMarkdown
+                    content={msg.text}
+                    variant={msg.role === "user" ? "user" : "bot"}
+                  />
                 </div>
               </div>
             ))}
