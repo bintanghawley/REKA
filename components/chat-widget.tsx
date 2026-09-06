@@ -283,15 +283,15 @@ export function ChatWidget() {
       {/* FAB Button */}
       <button
         onClick={toggleOpen}
-        className={`fixed bottom-4 right-4 sm:right-6 z-[60] w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 group ${
+        className={`fixed bottom-4 right-4 sm:right-6 z-[60] w-13 h-13 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all duration-300 group ${
           isOpen
-            ? "bg-[#141415] rotate-0"
-            : "bg-[#ffffff] border border-[#e4e5e1] hover:border-[#f35b22] hover:scale-105"
+            ? "bg-[#141415] rotate-0 text-white"
+            : "bg-[#ffffff] border border-[#e4e5e1] hover:border-[#f35b22] hover:scale-105 active:scale-95"
         }`}
         style={{
           boxShadow: isOpen
             ? "0 8px 24px rgba(20,20,21,0.3)"
-            : "0 4px 16px rgba(20,20,21,0.1), 0 1px 3px rgba(20,20,21,0.06)",
+            : "0 4px 16px rgba(20,20,21,0.08), 0 1px 3px rgba(20,20,21,0.05)",
         }}
         aria-label={isOpen ? "Tutup chat" : "Buka REKA Assistant"}
       >
@@ -299,10 +299,15 @@ export function ChatWidget() {
           <X className="w-5 h-5 text-white" />
         ) : (
           <>
-            <MessageCircle className="w-6 h-6 text-[#f35b22] group-hover:scale-110 transition-transform" />
+            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-[#f35b22] group-hover:scale-110 transition-transform" />
             {hasNewDot && (
-              <span className="absolute top-2 right-2 w-3 h-3 bg-[#f35b22] rounded-full animate-pulse border-2 border-white" />
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-[#f35b22] rounded-full animate-pulse border-2 border-white" />
             )}
+
+            {/* Tooltip on Hover */}
+            <span className="hidden sm:block absolute right-16 opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all pointer-events-none bg-[#141415] text-[#ffffff] text-[11px] font-mono font-medium py-1 px-2.5 rounded-[4px] shadow-md whitespace-nowrap">
+              REKA Assistant (AI)
+            </span>
           </>
         )}
       </button>

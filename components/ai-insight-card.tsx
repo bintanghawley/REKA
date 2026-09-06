@@ -32,24 +32,25 @@ export function FeatureAiInsight({
 
   return (
     <div className={`mt-4 pt-3 border-t border-[#e4e5e1] ${className}`}>
-      <div className="bg-[#141415] rounded-[8px] p-3 sm:p-3.5 text-white border border-[#2e2e2c] shadow-xs transition-all">
+      <div className="bg-[#fafaf8] rounded-[6px] p-3 sm:p-3.5 border border-[#e4e5e1] border-l-2 border-l-[#f35b22] shadow-[rgba(24,25,22,0.02)_0px_1px_2px_0px] transition-all hover:border-[#d9d9d9] hover:border-l-[#f35b22]">
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-1.5">
-            <Sparkles size={13} className="text-[#88d2c3] shrink-0 animate-pulse" />
-            <span className="font-mono text-[10px] font-semibold text-[#88d2c3] uppercase tracking-wider">
+            <div className="w-4 h-4 rounded-[3px] bg-[#ffcab5] text-[#d14200] flex items-center justify-center shrink-0">
+              <Sparkles size={10} />
+            </div>
+            <span className="font-mono text-[10px] font-semibold text-[#d14200] uppercase tracking-[0.88px]">
               AI Insight • {featureName}
             </span>
           </div>
           {insight.badge && (
-            <span className="font-mono text-[9px] font-medium text-[#f0f0ef] bg-[#2e2e2c] border border-[#454542] px-1.5 py-0.5 rounded-[3px] shrink-0">
+            <span className="font-mono text-[9px] font-medium text-[#6e6f6c] bg-[#ffffff] border border-[#e4e5e1] px-1.5 py-0.5 rounded-[3px] shrink-0">
               {insight.badge}
             </span>
           )}
         </div>
         <FormattedMarkdown
           content={insight.desc}
-          variant="dark"
-          className="text-[11px] sm:text-xs text-[#e4e5e1] leading-relaxed font-sans"
+          className="text-[12px] sm:text-[12.5px] text-[#454542] leading-[1.6] font-sans"
         />
       </div>
     </div>
@@ -85,7 +86,7 @@ export function AiInsightStatusBar({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 bg-[#ffffff] border border-[#e4e5e1] px-4 py-2.5 rounded-[8px] shadow-[rgba(24,25,22,0.04)_0px_1px_2px_0px] text-xs">
       <div className="flex items-center gap-2.5">
-        <div className="w-6 h-6 rounded-[4px] bg-[#141415] flex items-center justify-center text-[#88d2c3] shrink-0">
+        <div className="w-6 h-6 rounded-[4px] bg-[#ffcab5] text-[#d14200] flex items-center justify-center shrink-0">
           <Sparkles size={13} className="animate-pulse" />
         </div>
         <div className="text-xs">
@@ -104,10 +105,10 @@ export function AiInsightStatusBar({
           type="button"
           onClick={handleRefresh}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-[#141415] hover:bg-[#2e2e2c] active:scale-95 text-[#88d2c3] border border-[#2e2e2c] font-mono text-[11px] font-medium transition-all cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-[#fafaf8] hover:bg-[#f0f0ef] active:scale-95 text-[#141415] hover:text-[#f35b22] border border-[#e4e5e1] hover:border-[#d9d9d9] font-mono text-[11px] font-medium transition-all cursor-pointer disabled:opacity-50"
           title="Analisis ulang riwayat transaksi dengan Gemini AI"
         >
-          <RefreshCw size={11} className={`text-[#88d2c3] ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw size={11} className={`text-[#f35b22] ${loading ? "animate-spin" : ""}`} />
           <span>{loading ? "Menganalisis..." : "Perbarui AI"}</span>
         </button>
       </div>
@@ -122,3 +123,4 @@ export function AiInsightCard({ initialData }: { initialData: AiBusinessInsightR
   const [data, setData] = useState(initialData);
   return <AiInsightStatusBar data={data} onRefresh={setData} />;
 }
+
