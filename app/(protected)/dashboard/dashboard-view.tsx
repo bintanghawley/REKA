@@ -477,31 +477,6 @@ export function OptibizDashboardView({ data, aiInsight: initialAiInsight }: Prop
             </div>
           </div>
 
-          {/* Bottom Chart Indicator Pills */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mt-5 pt-3.5 border-t border-[#e4e5e1] text-xs">
-            <div className="flex flex-wrap items-center gap-3.5">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-[2px] bg-[#f35b22]"></span>
-                <span className="font-mono text-[11px] font-medium text-[#141415]">{trendLegend.m1}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-[2px] bg-[#8bc5f3]"></span>
-                <span className="font-mono text-[11px] font-medium text-[#6e6f6c]">{trendLegend.m2}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-[2px] bg-[#88d2c3]"></span>
-                <span className="font-mono text-[11px] font-medium text-[#6e6f6c]">{trendLegend.m3}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-[2px] bg-[#c678dd]"></span>
-                <span className="font-mono text-[11px] font-medium text-[#6e6f6c]">{trendLegend.m4}</span>
-              </div>
-            </div>
-
-            <span className="font-mono text-[11px] text-[#8c8c89] uppercase tracking-wider">
-              Filter: {trendPeriod}
-            </span>
-          </div>
 
           {/* AI Insight: Waktu Transaksi */}
           <FeatureAiInsight
